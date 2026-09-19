@@ -3,7 +3,7 @@ import { useFrame } from '@react-three/fiber'
 import { AdditiveBlending, BufferAttribute, BufferGeometry, Color, ShaderMaterial } from 'three'
 import { ambientTime, pointScale, POINT_SIZE_GLSL } from './ambient'
 import { DUSK, FIREFLIES } from './constants'
-import { stage } from './dusk'
+import { lightStage } from './dusk'
 import { isOnSlab } from './slab'
 
 const f = (value: number) => value.toFixed(4)
@@ -91,7 +91,7 @@ export function Fireflies() {
   const geometry = useMemo(() => buildSwarm(), [])
 
   useFrame(() => {
-    night.value = stage(DUSK.lampStart, DUSK.lampEnd)
+    night.value = lightStage(DUSK.lampStart, DUSK.lampEnd)
   })
 
   // Always in the scene, drawing nothing by day, so the shader is compiled

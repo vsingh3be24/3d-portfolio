@@ -138,7 +138,7 @@ const dusk: Palette = {
   water: '#2f4a5c',
   path: '#4a4740',
   windowDark: '#1b2430',
-  windowLit: '#ffd9a0',
+  windowLit: '#ffc987',
   pad: '#35492f',
   padHighlight: '#445c3a',
   paper: '#f0ece2',
@@ -158,12 +158,15 @@ export const ACCENT = '#c2603f'
 // The page's own colours, which follow the theme the same as the scene does.
 // ink is type, paper is the page and any surface type sits on, sky is the
 // void behind the slab. At dusk type goes light on dark.
-// onAccent is type laid on the accent itself, light in both themes.
-export type UiColours = { ink: string; paper: string; sky: string; onAccent: string }
+// onAccent is type laid on the accent itself, light in both themes. glow is
+// the page's light: the soft haloes, gradients and highlights, brass by day
+// and the estate's own lamplight at dusk, so the page and the lit windows
+// above it glow the same colour.
+export type UiColours = { ink: string; paper: string; sky: string; onAccent: string; glow: string }
 
 export const ui: Record<ThemeName, UiColours> = {
-  day: { ink: day.ink, paper: day.paper, sky: day.groundFar, onAccent: day.paper },
-  dusk: { ink: dusk.paper, paper: '#1f2735', sky: dusk.groundFar, onAccent: dusk.paper },
+  day: { ink: day.ink, paper: day.paper, sky: day.groundFar, onAccent: day.paper, glow: day.brass },
+  dusk: { ink: dusk.paper, paper: '#1f2735', sky: dusk.groundFar, onAccent: dusk.paper, glow: dusk.windowLit },
 }
 
 export const TYPE = {

@@ -1,12 +1,15 @@
 import { useEffect, useRef } from 'react'
 import { useFrame, useThree } from '@react-three/fiber'
 import type { Camera, Scene, WebGLRenderer } from 'three'
+import { postPasses } from './postPasses'
 
 // Dev-only instrumentation. Reads the numbers the budget is written in — draw
 // calls, triangles, frame time — straight off the renderer, so what is measured
 // is what the GPU was actually asked to do.
 export type PerfSample = {
   calls: number
+  // Of those, the finishing pass's fullscreen draws.
+  post: number
   triangles: number
   medianMs: number
   worstMs: number
@@ -95,6 +98,7 @@ export function PerfHud({ onSample }: { onSample: (sample: PerfSample) => void }
 
     const sample: PerfSample = {
       calls: gl.info.render.calls,
+      post: postPasses.value,
       triangles: gl.info.render.triangles,
       medianMs: median,
       worstMs: worst,

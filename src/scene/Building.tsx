@@ -698,12 +698,12 @@ const Windows = forwardRef<InstancedMesh, { matrices: Matrix4[] }>(function Wind
       state.epoch = dusk.epoch
       state.time = -1
     }
-    if (state.time === dusk.time) return
-    state.time = dusk.time
+    if (state.time === dusk.lights) return
+    state.time = dusk.lights
 
     const start = DUSK.cascadeStart
     for (let index = 0; index < delays.length; index += 1) {
-      lit.setX(index, smooth((dusk.time - start - delays[index]) / DUSK.windowFade))
+      lit.setX(index, smooth((dusk.lights - start - delays[index]) / DUSK.windowFade))
     }
     lit.needsUpdate = true
   })

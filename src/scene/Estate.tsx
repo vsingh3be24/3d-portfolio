@@ -14,6 +14,7 @@ import { useEstate } from '@/store/useEstate'
 import { CameraRig } from './CameraRig'
 import { CAMERA, PERF, UI } from './constants'
 import { pixelRatioFor } from './deviceTier'
+import { markRevealed } from './intro'
 import { attachLoadingManager, finishStage } from './loading'
 import { Buildings } from './Building'
 import { Ground } from './Ground'
@@ -31,6 +32,7 @@ import { Fountain } from './Fountain'
 import { Walkers } from './Walkers'
 import { Smoke } from './Smoke'
 import { Fireflies } from './Fireflies'
+import { PostFX } from './PostFX'
 
 // Holds the reveal back until a few frames have actually rendered, so shaders
 // are compiled and the first frame the visitor sees is never a stutter.
@@ -162,12 +164,14 @@ export function Estate() {
             <Birds />
             <Smoke />
             <CameraRig />
+            <PostFX />
             <WarmUp
               onReady={() => {
                 // The last stage: every other one finished before the scene
                 // could render at all, so this is the counter reaching 100.
                 finishStage('frame')
                 setReady(true)
+                markRevealed()
                 window.setTimeout(() => setLoaderGone(true), prefersReducedMotion ? 0 : UI.revealDurationMs)
               }}
             />
@@ -184,7 +188,9 @@ export function Estate() {
 
       {showPerf && perf && (
         <div className="pointer-events-none absolute bottom-3 right-3 z-40 border border-ink/20 bg-paper/95 px-3 py-2 font-mono text-[11px] leading-tight text-ink/80">
-          <div>calls {perf.calls} / 60</div>
+          <div>
+            calls {perf.calls - perf.post} / 60 · +{perf.post} post
+          </div>
           <div>tris {(perf.triangles / 1000).toFixed(1)}k / 150k</div>
           <div>
             med {perf.medianMs.toFixed(1)}ms p95 {perf.worstMs.toFixed(1)}ms

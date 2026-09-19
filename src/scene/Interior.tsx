@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef } from 'react'
 import { useFrame } from '@react-three/fiber'
 import {
   Box3,
@@ -12,6 +12,7 @@ import {
   MeshLambertMaterial,
   Group,
   Mesh,
+  type PointLight,
   SRGBColorSpace,
   type Camera,
   type Scene,
@@ -22,8 +23,8 @@ import { plots, type Exhibit, type Plot } from '@/data/plots'
 import { usePrefersReducedMotion } from '@/hooks/usePrefersReducedMotion'
 import { useEstate } from '@/store/useEstate'
 import { ACCENT, palette, themes } from '@/theme'
-import { DUSK, ROOM, UI } from './constants'
-import { stage } from './dusk'
+import { AMBIENT, DUSK, ROOM, UI } from './constants'
+import { lightStage } from './dusk'
 import { kitEntry, paintSurface, UNTEXTURED, type Mount } from './exhibitKit'
 import { boxRaycast } from './raycast'
 import { PAD_TOP, roomScale } from './room'
@@ -456,10 +457,6 @@ function Room({ plot }: { plot: Plot }) {
   const built = useMemo(() => ({ shell: buildShell(plot), exhibits: buildExhibits(plot) }), [plot])
   const backToInterior = useEstate((state) => state.backToInterior)
 
-  useFrame(() => {
-    roomLight.value = stage(DUSK.cascadeStart, DUSK.cascadeStart + DUSK.cascadeSpan + DUSK.windowFade)
-  })
-
   // The room arriving and leaving both change what casts shadows.
   useEffect(() => {
     requestShadowUpdate()
@@ -535,15 +532,58 @@ export function precompileRoomMaterials(gl: WebGLRenderer, camera: Camera, scene
   }
 }
 
+// The strip light's real light, so a room at night is lit from inside rather
+// than left to the moon. Always in the scene, dark when no room is open or by
+// day: adding a light changes every material's program, so one that came
+// and went with the rooms would recompile the whole estate on the way in.
+// It is on the mirror's layer too, so the pond's pass sees the same lights
+// and draws with the same programs.
+function RoomLamp({ plot }: { plot: Plot | null }) {
+  const lampRef = useRef<PointLight>(null)
+  const scale = plot ? roomScale(plot) : 1
+
+  useLayoutEffect(() => {
+    lampRef.current?.layers.enable(AMBIENT.reflectLayer)
+  }, [])
+
+  useFrame(() => {
+    const lamp = lampRef.current
+    roomLight.value = lightStage(DUSK.cascadeStart, DUSK.cascadeStart + DUSK.cascadeSpan + DUSK.windowFade)
+    if (!lamp) return
+    lamp.intensity = plot ? ROOM.lampIntensity * roomLight.value : 0
+  })
+
+  return (
+    <group position={plot?.position ?? [0, 0, 0]} rotation={[0, plot?.rotation ?? 0, 0]}>
+      <group position={[0, PAD_TOP + ROOM.floorLift, 0]} scale={scale}>
+        <pointLight
+          ref={lampRef}
+          position={[0.1, H - ROOM.lampBelowCeiling, BACK_Z + ROOM.lampOut]}
+          color={themes.dusk.windowLit}
+          intensity={0}
+          distance={ROOM.lampRange * scale}
+          decay={2}
+          castShadow={false}
+        />
+      </group>
+    </group>
+  )
+}
+
 export function Interiors() {
   const activePlotId = useEstate((state) => state.activePlotId)
-  const plot = activePlotId ? plots.find((entry) => entry.id === activePlotId) : null
-  if (!plot || plot.exhibits.length === 0) return null
+  const found = activePlotId ? plots.find((entry) => entry.id === activePlotId) : null
+  const plot = found && found.exhibits.length > 0 ? found : null
 
   // Keyed by plot, so moving between rooms tears the old one down completely.
   return (
-    <group position={plot.position} rotation={[0, plot.rotation, 0]}>
-      <Room key={plot.id} plot={plot} />
-    </group>
+    <>
+      <RoomLamp plot={plot} />
+      {plot && (
+        <group position={plot.position} rotation={[0, plot.rotation, 0]}>
+          <Room key={plot.id} plot={plot} />
+        </group>
+      )}
+    </>
   )
 }

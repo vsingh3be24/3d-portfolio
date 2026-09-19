@@ -220,11 +220,13 @@ export const FOCUS = {
 // Lighting. The directional light keeps its distance from the estate as it
 // moves, so the shadow frustum below still encloses the slab at dusk.
 export const LIGHTING = {
-  hemiIntensity: 0.85,
+  // More sun against less sky fill: the same overall brightness, but shadows
+  // that read as sunlight rather than overcast.
+  hemiIntensity: 0.62,
   hemiSky: "#dcecf5",
   hemiGround: "#6f7a5c",
-  directionalIntensity: 0.95,
-  directionalColor: "#fff3e0",
+  directionalIntensity: 1.35,
+  directionalColor: "#fff0d9",
   // Far enough out that the shadow frustum stays tight around the estate.
   directionalPosition: [26, 34, 20] as [number, number, number],
   shadowMapSize: 2048,
@@ -232,7 +234,7 @@ export const LIGHTING = {
   shadowNormalBias: 0.02,
   // PCFSoftShadowMap was removed in three r186, so softness comes from the PCF
   // kernel radius instead. Cheaper than PCSS, which the frame budget rules out.
-  shadowRadius: 3,
+  shadowRadius: 2.4,
   shadowExtent: 24,
   shadowNear: 20,
   shadowFar: 80,
@@ -260,19 +262,77 @@ export const DUSK = {
   lampStart: 1.02,
   lampEnd: 1.4,
 
-  sunElevationDusk: 0.34,
-  sunColourDusk: '#ffb27a',
-  sunIntensityDusk: 0.8,
-  hemiSkyDusk: '#7486ad',
-  hemiGroundDusk: '#3a3830',
-  hemiIntensityDusk: 1.1,
+  // Night is lit by a cool moon rather than a low warm sun, so everything
+  // warm in the frame is a light someone switched on.
+  sunElevationDusk: 0.62,
+  sunColourDusk: '#9fb6de',
+  sunIntensityDusk: 0.42,
+  hemiSkyDusk: '#6d82b0',
+  hemiGroundDusk: '#34332f',
+  hemiIntensityDusk: 0.8,
 
-  windowGlow: 1.35,
-  lampGlow: 2.2,
-  poolRadius: 2.3,
-  poolOpacity: 0.32,
+  windowGlow: 1.8,
+  lampGlow: 2.9,
+  poolRadius: 2.6,
+  poolOpacity: 0.5,
   poolY: 0.09,
   poolTextureSize: 128,
+} as const
+
+// The first sight of the estate. The camera arrives from high up and round
+// to one side, sweeping down into the home view as the loading screen fades;
+// arriving at dusk, the estate is shown dark and its lights come on around
+// the camera as it settles. Skipped for reduced motion, paused motion, and a
+// link straight into a building.
+export const INTRO = {
+  seconds: 3.6,
+  // The start of the sweep, relative to the home view: this much further out,
+  // looking this steeply down (polar angle from straight up), and swung this
+  // far round the estate.
+  radiusScale: 1.5,
+  phi: 0.42,
+  swing: -1.25,
+  // Arrival eases out: quick while the loading screen is still fading, then
+  // a long settle. The power of the ease.
+  easePower: 3,
+  // The lights wait this long after the reveal, then run the dusk sequence's
+  // window cascade and streetlights this much slower than a toggle does.
+  lightsDelay: 0.55,
+  lightsRate: 0.55,
+} as const
+
+// The finishing pass over the rendered frame. Bright lights bleed a soft glow
+// into the dark around them, the corners fall off a little, and a fine grain
+// keeps the dark sky free of banding. The glow is the dusk's: it rises as the
+// lights come on and is gone by day, when there is nothing lit to glow.
+export const POSTFX = {
+  // Glow is gathered from what is brighter than this (0 to 1, as displayed),
+  // easing in over the knee so nothing pops as it crosses the line.
+  threshold: 0.6,
+  knee: 0.25,
+  // Blur levels, each half the size of the one before, from half resolution.
+  levels: 5,
+  // How far each level spreads, and how strongly the glow is added back.
+  radius: 0.9,
+  strength: 2.2,
+  // Share of the glow's own colour kept, against a warm push towards the
+  // lamp colour, so white-hot centres still glow warm.
+  warmth: 0.25,
+  // Corner fall-off by day and at dusk, and where it starts from the centre.
+  vignetteDay: 0.16,
+  vignetteDusk: 0.3,
+  vignetteStart: 0.35,
+  // Film grain, as a fraction of full brightness. Dither as much as texture.
+  grain: 0.022,
+  // A light grade on the estate itself, never on the sky: a little more
+  // colour and contrast by day, and at dusk a cool lift in the shadows under
+  // warm light.
+  saturationDay: 1.12,
+  saturationDusk: 1.08,
+  contrastDay: 1.06,
+  contrastDusk: 1.1,
+  shadowTint: '#1d3350',
+  shadowTintAmount: 0.12,
 } as const
 
 // The park inside the ring road, and the estate dressing around it.
@@ -745,6 +805,14 @@ export const ROOM = {
   rugWidth: 2.2,
   rugDepth: 1.6,
   stripLightWidth: 3.4,
+  // The light the strip actually gives at night: a warm lamp hung just under
+  // it and out from the back wall, enough to read the room by without
+  // turning it into day. Intensity in candela; its reach is in room units
+  // and scales with the room.
+  lampIntensity: 2.8,
+  lampBelowCeiling: 0.45,
+  lampOut: 1.35,
+  lampRange: 6,
 
   // Hover: lift in canonical room units, and how fast it settles.
   exhibitLift: 0.08,

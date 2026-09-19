@@ -5,6 +5,7 @@ import { OVERVIEW_ID, plots } from "@/data/plots";
 import { profile } from "@/data/profile";
 import { site } from "@/data/site";
 import { useEstate } from "@/store/useEstate";
+import { themes } from "@/theme";
 
 // The destinations, in reading order: who, then the work, then the resume.
 // Contact is the noticeboard in the park, not a place to go into.
@@ -76,9 +77,23 @@ function Destinations({ returnTo }: { returnTo: RefObject<string | null> }) {
                   onMouseLeave={() => setHovered(null)}
                   onFocus={() => setHovered(plot.id)}
                   onBlur={() => setHovered(null)}
-                  className={itemClass}
+                  className={`group ${itemClass}`}
                 >
-                  <Entry active={plot.id === hoveredPlotId}>{plot.title}</Entry>
+                  <span className="flex items-center gap-3">
+                    {/* The building's roof colour, as on the tab bar. */}
+                    <span
+                      aria-hidden
+                      className="h-2 w-2 shrink-0 rounded-full transition-transform duration-200 group-hover:scale-150"
+                      style={{ backgroundColor: themes.day[plot.palette.roof] }}
+                    />
+                    <Entry active={plot.id === hoveredPlotId}>{plot.title}</Entry>
+                    <span
+                      aria-hidden
+                      className="-translate-x-2 text-accent opacity-0 transition-[opacity,transform] duration-200 group-hover:translate-x-0 group-hover:opacity-100"
+                    >
+                      →
+                    </span>
+                  </span>
                 </button>
               </Reveal>
             </li>
@@ -89,9 +104,18 @@ function Destinations({ returnTo }: { returnTo: RefObject<string | null> }) {
                 href={profile.resume}
                 target="_blank"
                 rel="noreferrer"
-                className={`${itemClass} transition-colors duration-200 hover:text-accent`}
+                className={`group ${itemClass} transition-colors duration-200 hover:text-accent`}
               >
-                {site.resumeLabel}
+                <span className="flex items-center gap-3">
+                  <span aria-hidden className="h-2 w-2 shrink-0 rounded-full border border-ink/40" />
+                  {site.resumeLabel}
+                  <span
+                    aria-hidden
+                    className="-translate-x-2 opacity-0 transition-[opacity,transform] duration-200 group-hover:translate-x-0 group-hover:opacity-100"
+                  >
+                    ↗
+                  </span>
+                </span>
               </a>
             </Reveal>
           </li>

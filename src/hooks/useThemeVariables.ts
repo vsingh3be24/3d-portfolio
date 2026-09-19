@@ -7,12 +7,13 @@ import { ACCENT, ui, type UiColours } from '@/theme'
 type Rgb = [number, number, number]
 type Palette = Record<keyof UiColours, Rgb>
 
-const KEYS: (keyof UiColours)[] = ['ink', 'paper', 'sky', 'onAccent']
+const KEYS: (keyof UiColours)[] = ['ink', 'paper', 'sky', 'onAccent', 'glow']
 const VARIABLE: Record<keyof UiColours, string> = {
   ink: '--ui-ink',
   paper: '--ui-paper',
   sky: '--ui-sky',
   onAccent: '--ui-on-accent',
+  glow: '--ui-glow',
 }
 
 function rgb(hex: string): Rgb {
@@ -21,7 +22,13 @@ function rgb(hex: string): Rgb {
 }
 
 function paletteOf(colours: UiColours): Palette {
-  return { ink: rgb(colours.ink), paper: rgb(colours.paper), sky: rgb(colours.sky), onAccent: rgb(colours.onAccent) }
+  return {
+    ink: rgb(colours.ink),
+    paper: rgb(colours.paper),
+    sky: rgb(colours.sky),
+    onAccent: rgb(colours.onAccent),
+    glow: rgb(colours.glow),
+  }
 }
 
 // The same curve the scene's sky fades on, so page and scene turn together.

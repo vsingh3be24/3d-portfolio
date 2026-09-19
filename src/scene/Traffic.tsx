@@ -16,7 +16,7 @@ import { usePrefersReducedMotion } from '@/hooks/usePrefersReducedMotion'
 import { useEstate } from '@/store/useEstate'
 import { AMBIENT, DUSK, ROAD, TRAFFIC, type VehicleBody } from './constants'
 import { getCurvatureAt, getLanePoint, getLaneStretchAt, getTangentAt, roadLength, wrapU } from './curves'
-import { stage } from './dusk'
+import { lightStage } from './dusk'
 import { axleGeometry, bodyGeometry, bodyMaterial, carLights, createBeamTexture, wheelMaterial } from './vehicles'
 
 const UP = new Vector3(0, 1, 0)
@@ -175,7 +175,7 @@ export function Traffic() {
     const step = Math.min(delta, 0.05)
     const moving = !prefersReducedMotion && !paused
     const elapsed = state.clock.elapsedTime
-    const lights = stage(DUSK.lampStart, DUSK.lampEnd)
+    const lights = lightStage(DUSK.lampStart, DUSK.lampEnd)
     carLights.value = lights
     beamMaterial.opacity = TRAFFIC.beamOpacity * lights
     beamMesh.visible = lights > 0

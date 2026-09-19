@@ -73,10 +73,10 @@ export function LoadingScreen({ progress, leaving = false }: { progress: number;
       <p className="font-body text-step-0 uppercase tracking-[0.16em] opacity-60">{site.loadingLine}</p>
       <p className="font-display text-step-5 font-semibold tabular-nums leading-none tracking-[-0.02em]">{figure}%</p>
       {/* A thin bar that fills with the counter. */}
-      <div aria-hidden className="mt-2 h-[3px] w-40 overflow-hidden rounded-full" style={{ backgroundColor: `${ink}22` }}>
+      <div aria-hidden className="mt-2 h-[3px] w-48 rounded-full" style={{ backgroundColor: `${ink}22` }}>
         <div
           className="h-full rounded-full transition-[width] duration-200 ease-out"
-          style={{ width: `${figure}%`, backgroundColor: ACCENT }}
+          style={{ width: `${figure}%`, backgroundColor: ACCENT, boxShadow: `0 0 12px ${ACCENT}` }}
         />
       </div>
     </div>

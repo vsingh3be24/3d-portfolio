@@ -35,6 +35,10 @@ export const site = {
   },
   walkInside: 'Walk inside',
   contactLine: 'Reach out by email, or find me on GitHub and LinkedIn.',
+  // Over the email address in the contact card, and the button beside it.
+  contactKicker: 'Have a role, a project or a question?',
+  copyEmail: 'Copy',
+  copiedEmail: 'Copied',
   backToTop: 'Back to top',
   builtNote: 'Built with React, three.js and React Three Fiber.',
   // The way out of a room. The short form is for phones, where the long one

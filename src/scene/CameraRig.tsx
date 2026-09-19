@@ -6,7 +6,8 @@ import { plots, type Plot } from '@/data/plots'
 import { useCoarsePointer, useIsMobile } from '@/hooks/useIsMobile'
 import { usePrefersReducedMotion } from '@/hooks/usePrefersReducedMotion'
 import { useEstate, type CampusCamera } from '@/store/useEstate'
-import { CAMERA, FLIGHT, FOCUS, ROOM } from './constants'
+import { CAMERA, FLIGHT, FOCUS, INTRO, ROOM } from './constants'
+import { introPlays, onReveal } from './intro'
 import { PAD_TOP, roomScale } from './room'
 
 type Controls = ComponentRef<typeof OrbitControls>
@@ -39,6 +40,9 @@ type Flight = {
   // Whether this flight ends on the campus, so leaving again mid-flight keeps
   // the campus view it was heading for rather than wherever it got to.
   toCampus: boolean
+  // The intro's arrival eases out rather than in and out: it is already
+  // moving as the loading screen fades off it.
+  arrival?: boolean
 }
 
 type Limits = {
@@ -60,6 +64,10 @@ function progress(t: number, startSpeed: number): number {
   const t2 = t * t
   const t3 = t2 * t
   return (t3 - 2 * t2 + t) * startSpeed + (-2 * t3 + 3 * t2)
+}
+
+function easeOut(t: number): number {
+  return 1 - Math.pow(1 - t, INTRO.easePower)
 }
 
 // The Hermite basis that leaves at unit slope and returns to zero at rest:
@@ -374,6 +382,46 @@ export function CameraRig() {
       camera.position.distanceToSquared(pose.position) < 1e-4 &&
       controls.target.distanceToSquared(pose.target) < 1e-4
 
+    // The first sight of the campus: parked high and round to one side,
+    // behind the loading screen, then swept down into the view as it lifts.
+    // Re-running without a real move (strict mode's second pass, a resize)
+    // picks the same arrival up where it is rather than replacing it.
+    const arriving = flight.current?.arrival && atCampus && move === 'shift' ? flight.current : null
+    if (arriving || (!before && atCampus && introPlays())) {
+      let arrival = arriving
+      if (!arrival) {
+        const to = viewOf(pose.position, pose.target)
+        arrival = {
+          from: { target: to.target.clone(), radius: to.radius * INTRO.radiusScale, phi: INTRO.phi, theta: to.theta + INTRO.swing },
+          to,
+          deltaTheta: -INTRO.swing,
+          seconds: INTRO.seconds,
+          startedAt: Infinity,
+          startSpeed: 0,
+          residual: null,
+          peak: null,
+          toCampus: true,
+          arrival: true,
+        }
+        place(arrival, 0, controls.target, camera.position, new Spherical())
+        camera.lookAt(controls.target)
+        flight.current = arrival
+        setFlying(true)
+      }
+      const planned = arrival
+      let timer = 0
+      const stop = onReveal(() => {
+        const now = performance.now() / 1000
+        if (!Number.isFinite(planned.startedAt)) planned.startedAt = now
+        const remaining = Math.max(planned.startedAt + planned.seconds - now, 0)
+        timer = window.setTimeout(settle, (remaining + FLIGHT.settleGraceSeconds) * 1000)
+      })
+      return () => {
+        stop()
+        window.clearTimeout(timer)
+      }
+    }
+
     if (!before || prefersReducedMotion || alreadyThere) {
       settle()
       return
@@ -459,8 +507,11 @@ export function CameraRig() {
 
     const current = flight.current
     if (current) {
-      const t = Math.min((performance.now() / 1000 - current.startedAt) / current.seconds, 1)
-      place(current, progress(t, current.startSpeed), controls.target, camera.position, spherical)
+      // Before its start (the intro, waiting for the reveal) a flight holds
+      // at the beginning of its path.
+      const t = Math.min(Math.max((performance.now() / 1000 - current.startedAt) / current.seconds, 0), 1)
+      const k = current.arrival ? easeOut(t) : progress(t, current.startSpeed)
+      place(current, k, controls.target, camera.position, spherical)
       if (current.residual) {
         const pathY = camera.position.y
         const carry = fade(t) * current.seconds

@@ -41,7 +41,7 @@ function SceneOverlay() {
                 onClick={() => document.getElementById("about")?.scrollIntoView({ behavior: "smooth" })}
                 aria-label={site.scrollCue}
                 title={site.scrollCue}
-                className="pointer-events-auto flex h-11 w-11 items-center justify-center rounded-full border border-ink/10 bg-paper/70 font-body text-step-1 text-ink/70 backdrop-blur-[12px] transition-colors hover:border-ink/30 hover:text-ink"
+                className="pointer-events-auto flex h-11 w-11 items-center justify-center rounded-full border border-ink/10 bg-paper/70 font-body text-step-1 text-ink/70 shadow-[0_8px_24px_-12px_rgb(0_0_0/0.5)] backdrop-blur-[12px] transition-[color,border-color,box-shadow] duration-200 hover:border-glow/60 hover:text-ink hover:shadow-[0_8px_26px_-8px_rgb(var(--ui-glow)/0.6)]"
               >
                 <span aria-hidden className="inline-block motion-safe:animate-bounce">
                   ↓

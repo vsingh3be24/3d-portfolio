@@ -102,7 +102,9 @@ const material = new ShaderMaterial({
       float body = smoothstep( ${f(SKY.cloudCover)}, ${f(SKY.cloudCover + SKY.cloudSoftness * 2.5)}, shape );
       vec3 cloud = mix( uCloudShade, uCloud, body );
 
-      gl_FragColor = vec4( mix( sky, cloud, cover * uCloudOpacity ), 1.0 );
+      // No alpha: it tells the finishing pass this is sky, which it leaves
+      // exactly as painted (see PostFX).
+      gl_FragColor = vec4( mix( sky, cloud, cover * uCloudOpacity ), 0.0 );
       #include <colorspace_fragment>
     }`,
   side: BackSide,

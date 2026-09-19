@@ -26,12 +26,16 @@ import { palette, themes } from '@/theme'
 import { AMBIENT, BOUNDARY, COLORS, COMMUNITY, DUSK, ESTATE, PARK, ROAD, SLAB, TREES } from './constants'
 import { getLanePoint, getPointAt, roadJunctions, roadLength, wrapU } from './curves'
 import { gateAnchor, gateT, isOnSlab, slabOutline } from './slab'
-import { stage, trackColour } from './dusk'
+import { lightStage, trackColour, trackTint } from './dusk'
 import { treeGeometry, treeMaterial, type TreeSpecies } from './trees'
 
 // One material for every piece of static dressing. Colour rides on the vertices
 // instead, so nine separate props collapse into a single draw call.
 const dressingMaterial = new MeshLambertMaterial({ vertexColors: true })
+// Vertex colours can't follow dusk themselves, so the material's colour, which
+// multiplies them, carries the path's day-to-dusk change for all of them. Left
+// at their day colours, the pale paths and kerbs glared under the moon.
+trackTint(dressingMaterial.color, 'path')
 
 const materials = {
   trunk: new MeshLambertMaterial({ color: COLORS.trunk }),
@@ -442,7 +446,7 @@ export function Props() {
   // Lamps come on last in the dusk sequence. By day the pools are not drawn
   // at all, so they cost the daytime scene nothing.
   useFrame(() => {
-    const level = stage(DUSK.lampStart, DUSK.lampEnd)
+    const level = lightStage(DUSK.lampStart, DUSK.lampEnd)
     if (level === lampLevel.current) return
     lampLevel.current = level
     lampUniform.value = level

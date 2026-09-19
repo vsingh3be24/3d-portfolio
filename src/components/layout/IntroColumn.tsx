@@ -1,40 +1,13 @@
-import { motion } from "framer-motion";
 import { CountUp } from "@/components/motion/CountUp";
 import { Reveal, RevealGroup } from "@/components/motion/Reveal";
 import { PlotIndex } from "@/components/ui/PlotIndex";
-import { nudge, pill } from "@/components/ui/styles";
+import { Magnetic } from "@/components/motion/Magnetic";
+import { RisingText } from "@/components/motion/RisingText";
+import { Glow } from "@/components/ui/Glow";
+import { nudge, pill, rule } from "@/components/ui/styles";
 import { profile } from "@/data/profile";
 import { site } from "@/data/site";
 import { useEstate } from "@/store/useEstate";
-
-const EASE = [0.22, 1, 0.36, 1] as const;
-
-// Each word of the name rises into place from behind a mask, one after
-// another. The mask carries extra room below the baseline so descenders are
-// never clipped, and gives it back with a negative margin so line spacing is
-// untouched.
-function RisingName({ name }: { name: string }) {
-  return (
-    <>
-      {name.split(" ").map((word, index) => (
-        <span key={word + index}>
-          {/* A real space between the masks, so the name still wraps. */}
-          {index > 0 && " "}
-          <span className="-mb-[0.14em] inline-block overflow-hidden pb-[0.14em] align-bottom">
-            <motion.span
-              className="inline-block"
-              initial={{ y: "110%" }}
-              animate={{ y: 0 }}
-              transition={{ duration: 0.9, delay: 0.1 + index * 0.09, ease: EASE }}
-            >
-              {word}
-            </motion.span>
-          </span>
-        </span>
-      ))}
-    </>
-  );
-}
 
 // The left half of the hero: who, how to reach them, three numbers, then the
 // way into the estate. Inside a room the list at the bottom becomes that
@@ -47,8 +20,11 @@ export function IntroColumn() {
     // Centred with auto margins rather than justify-center: when the column is
     // taller than the screen, this starts at the top and scrolls, instead of
     // spilling off both ends where the name could never be scrolled back to.
-    <div className="flex h-full flex-col overflow-y-auto px-6 py-10 sm:px-10 lg:py-8 xl:px-16">
-      <RevealGroup className="my-auto">
+    <div className="relative flex h-full flex-col overflow-y-auto overflow-x-hidden px-6 py-10 sm:px-10 lg:py-8 xl:px-16">
+      {/* Light from the estate spilling across, behind the name. */}
+      <Glow className="-left-24 top-[8%] h-[420px] w-[420px]" />
+      <Glow tone="glow" delay={7} className="-right-32 top-[38%] h-[360px] w-[360px]" />
+      <RevealGroup className="relative my-auto">
         <Reveal>
           <p className="inline-flex items-center gap-2 rounded-full border border-ink/10 bg-ink/[0.03] py-1 pl-2.5 pr-3.5 font-body text-step-0 text-ink/75">
             <span aria-hidden className="relative flex h-2 w-2">
@@ -60,11 +36,11 @@ export function IntroColumn() {
         </Reveal>
 
         <h1 className="mt-4 max-w-[14ch] font-display text-step-5 font-semibold leading-[0.95] tracking-[-0.03em] text-ink lg:text-[76px] lg:[@media(max-height:860px)]:text-step-5">
-          <RisingName name={profile.name} />
+          <RisingText text={profile.name} lastClassName="text-sheen motion-safe:animate-sheen" />
         </h1>
 
         <Reveal>
-          <div className="mt-5 h-[3px] w-14 rounded-full bg-accent" />
+          <div className={`mt-5 w-16 ${rule}`} />
         </Reveal>
 
         <Reveal>
@@ -82,12 +58,14 @@ export function IntroColumn() {
         )}
 
         <Reveal className="mt-6 flex flex-wrap gap-2.5">
-          <a href={`mailto:${profile.email}`} className={pill.primary}>
-            Email
-            <span aria-hidden className={nudge}>
-              →
-            </span>
-          </a>
+          <Magnetic>
+            <a href={`mailto:${profile.email}`} className={pill.primary}>
+              Email
+              <span aria-hidden className={nudge}>
+                →
+              </span>
+            </a>
+          </Magnetic>
           <a href={profile.github} target="_blank" rel="noreferrer" className={pill.secondary}>
             GitHub
             <span aria-hidden className={nudge}>
@@ -105,7 +83,8 @@ export function IntroColumn() {
         {atCampus && (
           <Reveal className="mt-7 flex flex-wrap gap-x-8 gap-y-4">
             {profile.stats.map((stat) => (
-              <div key={stat.label}>
+              <div key={stat.label} className="relative pt-3">
+                <span aria-hidden className={`absolute left-0 top-0 w-6 ${rule}`} />
                 <div className="font-display text-step-4 font-semibold leading-none tracking-[-0.02em] text-ink">
                   <CountUp value={stat.value} />
                 </div>

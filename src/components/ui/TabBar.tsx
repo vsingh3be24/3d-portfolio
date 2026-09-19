@@ -24,7 +24,7 @@ export function TabBar() {
   return (
     <nav
       aria-label="Buildings"
-      className="pointer-events-auto max-w-full overflow-x-auto rounded-full border border-ink/10 bg-paper/60 p-1 backdrop-blur-[12px] scrollbar-none"
+      className="pointer-events-auto max-w-full overflow-x-auto rounded-full border border-ink/10 bg-paper/60 p-1 shadow-[0_12px_40px_-18px_rgb(0_0_0/0.55)] backdrop-blur-[12px] scrollbar-none"
     >
       <ul className="flex w-max items-center gap-0.5">
         {tabs.map((plot) => {
@@ -45,7 +45,7 @@ export function TabBar() {
                 {active && (
                   <motion.span
                     layoutId="active-tab"
-                    className="absolute inset-0 rounded-full bg-accent"
+                    className="absolute inset-0 rounded-full bg-accent shadow-[0_0_20px_-2px_rgb(var(--ui-accent)/0.75)]"
                     transition={{ type: 'spring', stiffness: 520, damping: 40 }}
                   />
                 )}

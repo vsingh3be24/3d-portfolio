@@ -4,9 +4,10 @@ import { Color, type DirectionalLight, type HemisphereLight } from 'three'
 import { usePrefersReducedMotion } from '@/hooks/usePrefersReducedMotion'
 import { useEstate } from '@/store/useEstate'
 import { themes } from '@/theme'
-import { AMBIENT, DUSK, LIGHTING, SKY } from './constants'
+import { AMBIENT, DUSK, INTRO, LIGHTING, SKY } from './constants'
 import { applyColours, dusk, stage } from './dusk'
 import { skyColours } from './Sky'
+import { introPlays, sinceReveal } from './intro'
 import { requestShadowUpdate, takeShadowRequest } from './shadows'
 
 // The sun moves on a sphere round the estate: same bearing, same distance, only
@@ -46,6 +47,9 @@ export function Lighting() {
   const prefersReducedMotion = usePrefersReducedMotion()
   const sky = useMemo(() => SKY_DAY.clone(), [])
   const firstRun = useRef(true)
+  // Arriving at dusk with the intro: the lights start out and come on at the
+  // intro's pace. Any toggle after that hands them back to the ordinary one.
+  const introLights = useRef(false)
   // The time last written to the scene, so a settled sequence costs nothing.
   const applied = useRef<number | null>(null)
 
@@ -102,6 +106,8 @@ export function Lighting() {
       dusk.epoch += 1
     }
     if (firstRun.current || prefersReducedMotion) dusk.time = theme === 'dusk' ? DUSK.duration : 0
+    introLights.current = firstRun.current && theme === 'dusk' && introPlays()
+    dusk.lights = introLights.current ? 0 : dusk.time
     firstRun.current = false
   }, [theme, prefersReducedMotion, camera])
 
@@ -112,6 +118,17 @@ export function Lighting() {
     if (dusk.time !== goal) {
       dusk.time = goal > dusk.time ? Math.min(dusk.time + delta, goal) : Math.max(dusk.time - delta, goal)
     }
+    // The lights follow the sequence, never ahead of it. Behind it only for
+    // the intro, which holds them until the reveal and then runs them slower.
+    if (dusk.lights > dusk.time || !introLights.current) {
+      dusk.lights = dusk.time
+    } else if (dusk.lights < dusk.time) {
+      const since = sinceReveal()
+      if (since !== null && since >= INTRO.lightsDelay) {
+        dusk.lights = Math.min(dusk.lights + delta * INTRO.lightsRate, dusk.time)
+      }
+    }
+    if (dusk.lights === dusk.time) introLights.current = false
     if (applied.current === dusk.time) return
     applied.current = dusk.time
 

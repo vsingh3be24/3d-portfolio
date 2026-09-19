@@ -12,7 +12,7 @@ function RoundButton({ label, onClick, children }: { label: string; onClick: () 
       onClick={onClick}
       aria-label={label}
       title={label}
-      className="flex h-11 w-11 items-center justify-center rounded-full border border-ink/15 bg-paper/90 text-ink/80 hover:border-ink/40 hover:text-ink"
+      className="flex h-11 w-11 items-center justify-center rounded-full border border-ink/15 bg-paper/70 text-ink/80 shadow-[0_8px_24px_-12px_rgb(0_0_0/0.5)] backdrop-blur-[12px] transition-[color,border-color,box-shadow,transform] duration-200 hover:-translate-y-0.5 hover:border-glow/60 hover:text-ink hover:shadow-[0_8px_26px_-8px_rgb(var(--ui-glow)/0.6)]"
     >
       {children}
     </button>
@@ -63,7 +63,7 @@ export function SceneControls() {
         <button
           type="button"
           onClick={backToCampus}
-          className="flex h-11 items-center gap-2 rounded-full border border-ink/15 bg-paper/90 px-4 font-body text-step-0 text-ink hover:border-ink/40"
+          className="flex h-11 items-center gap-2 rounded-full border border-ink/15 bg-paper/70 px-4 font-body text-step-0 text-ink shadow-[0_8px_24px_-12px_rgb(0_0_0/0.5)] backdrop-blur-[12px] transition-[border-color,box-shadow] duration-200 hover:border-glow/60 hover:shadow-[0_8px_26px_-8px_rgb(var(--ui-glow)/0.6)]"
         >
           <span aria-hidden>←</span>
           <span className="sm:hidden">{site.backLabelShort}</span>

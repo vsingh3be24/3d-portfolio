@@ -7,6 +7,11 @@ import { DUSK } from './constants'
 export const dusk = {
   // Seconds into the sequence: 0 is full day, DUSK.duration is full dusk.
   time: 0,
+  // Where the lights have got to in the same sequence: the windows, the
+  // streetlights, the cars' lamps, the fireflies. Always time, except when
+  // the estate is first seen at dusk: then the lights start out and catch up
+  // as the camera arrives (see INTRO).
+  lights: 0,
   // Where the camera stood when the current toggle began, which is what the
   // window cascade orders itself by. The epoch changes with every toggle.
   origin: new Vector3(),
@@ -25,6 +30,11 @@ export function smooth(value: number): number {
 // Progress of a stage of the sequence that runs from start to end.
 export function stage(start: number, end: number): number {
   return smooth((dusk.time - start) / (end - start))
+}
+
+// The same, on the lights' clock.
+export function lightStage(start: number, end: number): number {
+  return smooth((dusk.lights - start) / (end - start))
 }
 
 // A material colour that cross-fades with the sky. Registered once at the
