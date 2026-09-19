@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import { site } from '@/data/site'
 import type { ThemeName } from '@/theme'
 
 const THEME_KEY = 'estate.theme'
@@ -12,6 +13,11 @@ function read(key: string): string | null {
   } catch {
     return null
   }
+}
+
+function storedTheme(): ThemeName | null {
+  const stored = read(THEME_KEY)
+  return stored === 'day' || stored === 'dusk' ? stored : null
 }
 
 function write(key: string, value: string) {
@@ -72,7 +78,7 @@ export const useEstate = create<EstateState>()((set, get) => ({
   level: 'campus',
   activePlotId: null,
   activeExhibitId: null,
-  theme: read(THEME_KEY) === 'dusk' ? 'dusk' : 'day',
+  theme: storedTheme() ?? site.defaultTheme,
   paused: read(PAUSED_KEY) === 'true',
   hasInteracted: false,
   campusCamera: null,

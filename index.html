@@ -12,11 +12,12 @@
     />
     <title>Vaishnavi Singh</title>
   </head>
-  <!-- The stored theme is applied before first paint, so a returning dusk
-       visitor never sees a flash of daylight while the app loads. -->
+  <!-- The theme is applied before first paint, so a page opening at dusk
+       never shows a flash of daylight while the app loads. -->
   <script>
     try {
-      if (localStorage.getItem('estate.theme') === 'dusk') document.documentElement.dataset.theme = 'dusk'
+      // Falls back to dusk, matching site.defaultTheme in src/data/site.ts.
+      if ((localStorage.getItem('estate.theme') || 'dusk') === 'dusk') document.documentElement.dataset.theme = 'dusk'
     } catch {}
   </script>
   <body>

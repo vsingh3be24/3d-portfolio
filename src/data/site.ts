@@ -1,6 +1,9 @@
 // Words the site itself says, as opposed to what it says about its owner.
 // Kept here so a second instance can rewrite them without touching a component.
 export const site = {
+  // The theme a first-time visitor sees. A visitor who toggles keeps their
+  // choice on later visits. index.html mirrors this for the first paint.
+  defaultTheme: 'dusk' as 'day' | 'dusk',
   // Shown above the counter while the estate loads.
   loadingLine: 'Laying out the estate',
   // The first-run card: what this is, then how to use it.
