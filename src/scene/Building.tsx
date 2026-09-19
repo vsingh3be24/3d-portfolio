@@ -171,6 +171,28 @@ function storeySize(plot: Plot, storey: number) {
   }
 }
 
+const CHIMNEY_SIZE = 0.34
+
+// Where a chimney stands on its building, in the building's own frame: x and
+// z of its centre, and the height of its top. Shared by the geometry and by
+// the smoke that rises from it, so the two can never drift apart.
+function chimneyLocal(plot: Plot): [number, number, number] {
+  const top = storeySize(plot, plot.floors - 1)
+  const wallTop = PAD_TOP + plot.floors * BUILDING.floorHeight
+  return [top.w / 2 - 0.6, wallTop + BUILDING.roofHeight + 0.5, -top.d / 4]
+}
+
+// The top of every chimney on the estate, in world space.
+export function chimneyTops(): { plotId: string; position: Vector3 }[] {
+  return plots
+    .filter((plot) => plot.kind !== 'contact' && plot.props.includes('chimney'))
+    .map((plot) => {
+      const [x, y, z] = chimneyLocal(plot)
+      const position = new Vector3(x, y, z).applyAxisAngle(new Vector3(0, 1, 0), plot.rotation)
+      return { plotId: plot.id, position: position.add(new Vector3(...plot.position)) }
+    })
+}
+
 // Everything that sits on or passes through the roof, merged into one piece so
 // it can lift away as a unit when a building opens.
 function roofAssembly(plot: Plot): BufferGeometry {
@@ -233,16 +255,9 @@ function roofAssembly(plot: Plot): BufferGeometry {
       trim.push(bowl)
     }
     if (prop === 'chimney') {
-      trim.push(
-        box(
-          0.34,
-          BUILDING.roofHeight + 0.5,
-          0.34,
-          top.w / 2 - 0.6,
-          wallTop + (BUILDING.roofHeight + 0.5) / 2,
-          -top.d / 4,
-        ),
-      )
+      const [x, height, z] = chimneyLocal(plot)
+      const tall = height - wallTop
+      trim.push(box(CHIMNEY_SIZE, tall, CHIMNEY_SIZE, x, wallTop + tall / 2, z))
     }
   }
 

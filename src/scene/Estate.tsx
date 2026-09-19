@@ -27,6 +27,11 @@ import { AmbientClock } from './ambient'
 import { Pond } from './Pond'
 import { Birds } from './Birds'
 import { Sky } from './Sky'
+import { Clouds } from './Clouds'
+import { Fountain } from './Fountain'
+import { Walkers } from './Walkers'
+import { Smoke } from './Smoke'
+import { Fireflies } from './Fireflies'
 
 // Holds the reveal back until a few frames have actually rendered, so shaders
 // are compiled and the first frame the visitor sees is never a stutter.
@@ -148,11 +153,16 @@ export function Estate() {
             <Road />
             <Props />
             <Pond />
+            <Fountain />
+            <Walkers />
+            <Fireflies />
+            <Clouds />
             <Buildings />
             <GroundLabels />
             <Interiors />
             <Traffic />
             <Birds />
+            <Smoke />
             <CameraRig />
             <WarmUp
               onReady={() => {

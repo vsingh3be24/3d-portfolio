@@ -314,6 +314,105 @@ export const AMBIENT = {
   reflectLayer: 1,
 } as const
 
+// Life around the estate. Everything here runs on the ambient clock, so it
+// stops when motion is paused and keeps to one draw call per kind.
+
+// Clouds drifting beneath and around the floating slab: the estate reads as
+// a city in the sky. They stay below the slab, so they never hide it.
+export const CLOUDS = {
+  count: 9,
+  seed: 4417,
+  radius: [17, 30] as [number, number],
+  height: [-9, -3.8] as [number, number],
+  scale: [1.5, 3.1] as [number, number],
+  // Radians per second round the estate, and a slow rise and fall.
+  drift: 0.012,
+  bob: 0.25,
+  // One cloud's puffs as [x, y, z, radius]; each instance is scaled and turned.
+  puffs: [
+    [0, 0, 0, 1],
+    [1.1, -0.15, 0.2, 0.75],
+    [-1.05, -0.2, -0.1, 0.7],
+    [0.35, 0.35, -0.3, 0.72],
+    [-0.4, 0.25, 0.4, 0.6],
+  ] as [number, number, number, number][],
+  // Clouds are flattened a little: wider than they are tall.
+  squash: 0.62,
+  // Real clouds scatter light into their own shadows; this much of their own
+  // colour glows back so the undersides stay soft rather than going grey.
+  glow: 0.55,
+} as const
+
+// A fountain in the middle of the pond, and the rings it spreads.
+export const FOUNTAIN = {
+  pedestalRadius: 0.3,
+  pedestalHeight: 0.32,
+  bowlRadius: 0.55,
+  bowlHeight: 0.1,
+  spoutRadius: 0.07,
+  spoutHeight: 0.34,
+  droplets: 280,
+  // Seconds a droplet takes from the spout back down to the water.
+  lifetime: 1.35,
+  launchSpeed: 3.1,
+  gravity: 5.2,
+  // How far out from straight up a jet leans, in radians.
+  spread: 0.32,
+  dropletSize: 0.065,
+  dropletColour: '#eaf6fb',
+  dropletOpacity: 0.85,
+  // Rings on the pond: how tightly packed, how fast they travel, how soon
+  // they die away, and how much they bend the reflection.
+  ringFrequency: 7,
+  ringSpeed: 2.4,
+  ringDecay: 0.9,
+  ringStrength: 0.012,
+} as const
+
+// People walking the park path, back and forth between the ends of an arc
+// that stops short of the noticeboard.
+export const WALKERS = {
+  count: 8,
+  seed: 9021,
+  // Radii across the path's width.
+  radius: [5.15, 5.75] as [number, number],
+  speed: [0.42, 0.62] as [number, number],
+  stride: 0.34,
+  // Room kept either side of the noticeboard, beyond its own half width.
+  boardClearance: 0.5,
+  legSwing: 0.55,
+  armSwing: 0.45,
+  bob: 0.012,
+  hipY: 0.22,
+  shoulderY: 0.42,
+  shirts: ['#c2603f', '#37506b', '#d9b44a', '#6b7f5a', '#a05a7a', '#3f7f8a', '#e9e4d8', '#8a6d52'],
+  trousers: '#3a3f4a',
+  skin: '#c99a74',
+} as const
+
+// Smoke from every chimney: puffs that rise, grow, drift downwind and fade.
+export const SMOKE = {
+  puffsPerChimney: 14,
+  lifetime: 4.6,
+  rise: 2.3,
+  drift: [0.7, 0.25] as [number, number],
+  size: [0.22, 0.95] as [number, number],
+  opacity: 0.5,
+} as const
+
+// Fireflies over the grass after dark: drifting points that blink.
+export const FIREFLIES = {
+  count: 70,
+  seed: 2213,
+  // Scattered within this radius of the centre, at knee to head height.
+  radius: 17,
+  height: [0.25, 1.4] as [number, number],
+  wander: 0.6,
+  size: 0.18,
+  colour: '#e4f58a',
+  brightness: 3,
+} as const
+
 // The sky dome: a sphere coloured by the direction it is seen in, centred on
 // whichever camera is drawing it. Its radius must stay inside the camera's
 // far plane.

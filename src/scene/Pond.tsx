@@ -3,7 +3,7 @@ import { useThree } from '@react-three/fiber'
 import { CircleGeometry, Color, Vector2, type Camera, type ShaderMaterial, type WebGLRenderer, type Scene } from 'three'
 import { Reflector } from 'three/examples/jsm/objects/Reflector.js'
 import { ambientTime } from './ambient'
-import { AMBIENT, PARK, WATER } from './constants'
+import { AMBIENT, FOUNTAIN, PARK, WATER } from './constants'
 import { isLowTier } from './deviceTier'
 import { duskLevel, trackColour } from './dusk'
 
@@ -54,8 +54,13 @@ const waterShader = {
         sin( p.x * 1.3 + t ) + 0.6 * sin( p.y * 1.7 - t * 1.2 ) + 0.35 * sin( ( p.x + p.y ) * 2.1 + t * 1.6 ),
         cos( p.y * 1.1 - t * 0.9 ) + 0.6 * cos( p.x * 1.9 + t * 1.3 ) + 0.35 * cos( ( p.x - p.y ) * 2.3 - t * 1.4 )
       );
+      // Rings spreading from the fountain, fading as they travel out.
+      vec2 fromCentre = vWorld.xz - uCentre;
+      float reach = length( fromCentre );
+      float ring = sin( reach * ${f(FOUNTAIN.ringFrequency)} - uTime * ${f(FOUNTAIN.ringSpeed)} ) * exp( -reach * ${f(FOUNTAIN.ringDecay)} );
       vec4 uv = vUv;
       uv.xy += ripple * ${f(WATER.rippleStrength)} * uv.w;
+      uv.xy += fromCentre / max( reach, 0.001 ) * ring * ${f(FOUNTAIN.ringStrength)} * uv.w;
       vec3 reflection = texture2DProj( tDiffuse, uv ).rgb;
       reflection *= mix( vec3( 1.0 ), uTint / max( max( max( uTint.r, uTint.g ), uTint.b ), 0.001 ), ${f(WATER.reflectionTint)} );
 
@@ -65,7 +70,7 @@ const waterShader = {
 
       float rim = length( vWorld.xz - uCentre ) / ${f(PARK.pondRadius)};
       vec3 water = uTint * uLight * ${f(WATER.depth)} * ( 1.0 - ${f(WATER.edgeDarkening)} * smoothstep( 0.65, 1.0, rim ) );
-      float crest = smoothstep( 1.3, 1.9, ripple.x + ripple.y ) * ${f(WATER.glint)};
+      float crest = ( smoothstep( 1.3, 1.9, ripple.x + ripple.y ) + max( ring, 0.0 ) * 0.6 ) * ${f(WATER.glint)};
 
       gl_FragColor = vec4( mix( water, reflection, mirror ) + crest * reflection, 1.0 );
       #include <tonemapping_fragment>
