@@ -72,7 +72,7 @@ export function IntroColumn() {
           </div>
         )}
 
-        <div className="mt-8">
+        <div className="mt-6">
           <PlotIndex />
         </div>
       </div>
