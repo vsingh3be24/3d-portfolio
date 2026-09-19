@@ -481,9 +481,9 @@ const definitions: PlotDefinition[] = [
         'I\'m studying for a B.Tech in Computer Engineering at Thapar Institute of Engineering and Technology, from August 2024 to May 2028, with a CGPA of 8.82.',
         'Coursework so far: Data Structures and Algorithms, Object-Oriented Programming, Operating Systems, Database Management Systems, Computer Networks and Software Engineering.',
       ]),
-      exhibit('roles', 'Four roles', 'laptopDesk', 'Placements, a hall of 900 residents, alumni and a web team.', [
+      exhibit('roles', 'Four roles', 'laptopDesk', 'Placements, a hall of 900 residents, alumni and the arts.', [
         'Since August 2025 I\'ve been a Student Placement Representative, coordinating between the placement cell and visiting companies on drive schedules and registrations, and a Proctor at Vahini Hall, responsible for student welfare, discipline and administration for 900+ residents.',
-        'From September 2024 to March 2025 I organised alumni-student outreach events for 200+ students as a coordinator at the Student Alumni Interaction Cell, and on the Microsoft Learn Student Chapter web team I built the About Us and Timeline pages for Makethon-7 in HTML, CSS and JavaScript, for 300+ visitors.',
+        'From September 2024 to March 2025 I organised alumni-student outreach events for 200+ students as a coordinator at the Student Alumni Interaction Cell, and I\'ve been a member of the Fine Arts and Photography Society, helping with campus exhibitions and events.',
       ]),
       exhibit(
         'numbers',

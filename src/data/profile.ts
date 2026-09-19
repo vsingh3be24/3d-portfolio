@@ -59,7 +59,7 @@ export const profile = {
   timeline: [
     { year: "2024", label: "95.24 percentile in JEE Mains" },
     { year: "Aug 2024", label: "Started B.Tech at Thapar Institute" },
-    { year: "Sep 2024", label: "Alumni cell coordinator and FAPS web team" },
+    { year: "Sep 2024", label: "Alumni cell coordinator and FAPS member" },
     { year: "2024", label: "Best Speaker, Model United Nations Society" },
     { year: "Aug 2025", label: "Student Placement Representative and Proctor, Vahini Hall" },
     { year: "2026", label: "Semifinalist, Flipkart GRID 8.0 Software Development Challenge" },
