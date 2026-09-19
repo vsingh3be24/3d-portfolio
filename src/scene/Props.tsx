@@ -6,9 +6,7 @@ import {
   CanvasTexture,
   BufferAttribute,
   BufferGeometry,
-  CircleGeometry,
   Color,
-  ConeGeometry,
   CylinderGeometry,
   InstancedMesh,
   type Material,
@@ -25,10 +23,11 @@ import {
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
 import { plots } from '@/data/plots'
 import { palette, themes } from '@/theme'
-import { BOUNDARY, COLORS, COMMUNITY, DUSK, ESTATE, PARK, ROAD, SLAB } from './constants'
+import { AMBIENT, BOUNDARY, COLORS, COMMUNITY, DUSK, ESTATE, PARK, ROAD, SLAB, TREES } from './constants'
 import { getLanePoint, getPointAt, roadJunctions, roadLength, wrapU } from './curves'
 import { gateAnchor, gateT, isOnSlab, slabOutline } from './slab'
 import { stage, trackColour } from './dusk'
+import { treeGeometry, treeMaterial, type TreeSpecies } from './trees'
 
 // One material for every piece of static dressing. Colour rides on the vertices
 // instead, so nine separate props collapse into a single draw call.
@@ -36,10 +35,13 @@ const dressingMaterial = new MeshLambertMaterial({ vertexColors: true })
 
 const materials = {
   trunk: new MeshLambertMaterial({ color: COLORS.trunk }),
-  foliage: new MeshLambertMaterial({ color: COLORS.foliage }),
 }
 trackColour(materials.trunk.color, 'trunk')
-trackColour(materials.foliage.color, 'foliage')
+
+// Seen in the pond as well as directly.
+function reflected(object: Object3D | null) {
+  object?.layers.enable(AMBIENT.reflectLayer)
+}
 
 function box(w: number, h: number, d: number, x = 0, y = 0, z = 0): BufferGeometry {
   const geometry = new BoxGeometry(w, h, d)
@@ -130,7 +132,7 @@ function mulberry32(seed: number) {
   }
 }
 
-type TreePlacement = { x: number; z: number; scale: number; rotation: number }
+type TreePlacement = { x: number; z: number; scale: number; rotation: number; species: TreeSpecies; tint: Color }
 
 // Sampled across the whole slab rather than in an annulus, because the rounded
 // corners of the slab are exactly where an annulus leaves bald patches.
@@ -187,7 +189,19 @@ function placeTrees(): TreePlacement[] {
       z: candidate.y,
       scale: 0.75 + random() * 0.6,
       rotation: random() * Math.PI * 2,
+      species: 'broadleaf',
+      tint: new Color(),
     })
+  }
+
+  // Species and colour come from their own stream, so choosing them never
+  // moves a tree that the placement above already settled.
+  const look = mulberry32(TREES.speciesSeed)
+  for (const tree of placements) {
+    tree.species = look() < TREES.broadleafShare ? 'broadleaf' : 'conifer'
+    const brightness = 1 + (look() * 2 - 1) * TREES.brightnessRange
+    const warmth = (look() * 2 - 1) * TREES.warmthRange
+    tree.tint.setRGB(brightness * (1 + warmth), brightness, brightness * (1 - warmth))
   }
 
   return placements
@@ -311,8 +325,6 @@ function buildCommunityBlock(): BufferGeometry[] {
 }
 
 type EstateResources = {
-  trunk: BufferGeometry
-  foliage: BufferGeometry
   lamp: BufferGeometry
   bench: BufferGeometry
   // Flat on the ground: receives shadow, casts none, so it never shadow-acnes
@@ -328,17 +340,6 @@ let resources: EstateResources | null = null
 
 function getResources(): EstateResources {
   if (resources) return resources
-
-  const trunk = new CylinderGeometry(0.09, 0.13, 0.9, 7)
-  trunk.translate(0, 0.45, 0)
-
-  const canopyLower = new ConeGeometry(0.62, 1.0, 8)
-  canopyLower.translate(0, 1.25, 0)
-  const canopyUpper = new ConeGeometry(0.44, 0.8, 8)
-  canopyUpper.translate(0, 1.85, 0)
-  const foliage = mergeGeometries([canopyLower, canopyUpper], false)
-  canopyLower.dispose()
-  canopyUpper.dispose()
 
   const pole = new CylinderGeometry(0.045, 0.055, ESTATE.lampHeight, 8)
   pole.translate(0, ESTATE.lampHeight / 2, 0)
@@ -359,10 +360,6 @@ function getResources(): EstateResources {
     ],
     false,
   )
-
-  const pond = new CircleGeometry(PARK.pondRadius, 40)
-  pond.rotateX(-Math.PI / 2)
-  pond.translate(PARK.pondCentre[0], PARK.pondY, PARK.pondCentre[1])
 
   const pondRim = new TorusGeometry(PARK.pondRadius, 0.11, 6, 40)
   pondRim.rotateX(-Math.PI / 2)
@@ -389,12 +386,10 @@ function getResources(): EstateResources {
   noticePanel.translate(contact.position[0], 0, contact.position[2])
 
   resources = {
-    trunk,
-    foliage,
     lamp,
     bench,
     flat: mergeGeometries(
-      [tint(pond, palette.water), tint(pondRim, palette.kerb), tint(path, palette.path)],
+      [tint(pondRim, palette.kerb), tint(path, palette.path)],
       false,
     ),
     standing: mergeGeometries(
@@ -471,10 +466,12 @@ export function Props() {
   return (
     <group>
       <mesh geometry={parts.flat} material={dressingMaterial} receiveShadow castShadow={false} />
-      <mesh geometry={parts.standing} material={dressingMaterial} castShadow receiveShadow />
+      <mesh ref={reflected} geometry={parts.standing} material={dressingMaterial} castShadow receiveShadow />
 
-      <TreeInstances trees={parts.trees} trunk={parts.trunk} foliage={parts.foliage} />
+      <TreeInstances trees={parts.trees} species="broadleaf" />
+      <TreeInstances trees={parts.trees} species="conifer" />
       <CountedInstances
+        ref={reflected}
         geometry={parts.lamp}
         material={lampMaterial}
         count={ESTATE.lampCount}
@@ -546,39 +543,38 @@ const CountedInstances = forwardRef<InstancedMesh, CountedInstancesProps>(functi
   )
 })
 
-function TreeInstances({
-  trees,
-  trunk,
-  foliage,
-}: {
-  trees: TreePlacement[]
-  trunk: BufferGeometry
-  foliage: BufferGeometry
-}) {
-  const transform = useMemo(
-    () => (dummy: Object3D, index: number) => {
-      const tree = trees[index]
+// One instanced mesh per species, each tree carrying its own colour variation.
+function TreeInstances({ trees, species }: { trees: TreePlacement[]; species: TreeSpecies }) {
+  const own = useMemo(() => trees.filter((tree) => tree.species === species), [trees, species])
+  const meshRef = useRef<InstancedMesh>(null)
+
+  useLayoutEffect(() => {
+    const mesh = meshRef.current
+    if (!mesh) return
+    const dummy = new Object3D()
+    own.forEach((tree, index) => {
       dummy.position.set(tree.x, 0, tree.z)
       dummy.rotation.set(0, tree.rotation, 0)
       dummy.scale.setScalar(tree.scale)
-    },
-    [trees],
-  )
+      dummy.updateMatrix()
+      mesh.setMatrixAt(index, dummy.matrix)
+      mesh.setColorAt(index, tree.tint)
+    })
+    mesh.instanceMatrix.needsUpdate = true
+    if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true
+  }, [own])
+
+  if (own.length === 0) return null
 
   return (
-    <>
-      <CountedInstances
-        geometry={trunk}
-        material={materials.trunk}
-        count={trees.length}
-        transform={transform}
-      />
-      <CountedInstances
-        geometry={foliage}
-        material={materials.foliage}
-        count={trees.length}
-        transform={transform}
-      />
-    </>
+    <instancedMesh
+      ref={(mesh) => {
+        meshRef.current = mesh
+        reflected(mesh)
+      }}
+      args={[treeGeometry(species), treeMaterial, own.length]}
+      castShadow
+      receiveShadow={false}
+    />
   )
 }

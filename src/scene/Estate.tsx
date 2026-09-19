@@ -23,6 +23,9 @@ import { Lighting } from './Lighting'
 import { Props } from './Props'
 import { Road } from './Road'
 import { Traffic } from './Traffic'
+import { AmbientClock } from './ambient'
+import { Pond } from './Pond'
+import { Birds } from './Birds'
 
 // Holds the reveal back until a few frames have actually rendered, so shaders
 // are compiled and the first frame the visitor sees is never a stutter.
@@ -137,14 +140,17 @@ export function Estate() {
           }}
         >
           <Suspense fallback={null}>
+            <AmbientClock />
             <Lighting />
             <Ground />
             <Road />
             <Props />
+            <Pond />
             <Buildings />
             <GroundLabels />
             <Interiors />
             <Traffic />
+            <Birds />
             <CameraRig />
             <WarmUp
               onReady={() => {

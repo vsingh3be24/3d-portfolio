@@ -31,9 +31,18 @@ export function stage(start: number, end: number): number {
 // point the material is made, so no component needs to know dusk exists.
 type Tracked = { colour: Color; day: Color; dusk: Color }
 const tracked: Tracked[] = []
+// The level last applied. A colour registered after that — a material made
+// late, or remade by a hot reload — starts at it rather than waiting, unset,
+// for the next theme change.
+let appliedLevel = 0
+
+function track(entry: Tracked): void {
+  tracked.push(entry)
+  entry.colour.lerpColors(entry.day, entry.dusk, appliedLevel)
+}
 
 export function trackColour(colour: Color, token: PaletteToken): void {
-  tracked.push({ colour, day: new Color(themes.day[token]), dusk: new Color(themes.dusk[token]) })
+  track({ colour, day: new Color(themes.day[token]), dusk: new Color(themes.dusk[token]) })
 }
 
 // For a textured material whose map already carries the day colour: the
@@ -42,10 +51,17 @@ export function trackTint(colour: Color, token: PaletteToken): void {
   const day = new Color(themes.day[token])
   const target = new Color(themes.dusk[token])
   const ratio = new Color(target.r / day.r, target.g / day.g, target.b / day.b)
-  tracked.push({ colour, day: new Color(1, 1, 1), dusk: ratio })
+  track({ colour, day: new Color(1, 1, 1), dusk: ratio })
+}
+
+// How far colours have gone towards dusk, for anything that has to follow
+// them without being a tracked colour itself.
+export function colourLevel(): number {
+  return appliedLevel
 }
 
 export function applyColours(level: number): void {
+  appliedLevel = level
   for (const entry of tracked) entry.colour.lerpColors(entry.day, entry.dusk, level)
 }
 

@@ -1,28 +1,28 @@
-import { useEffect, useRef } from 'react'
+import { useLayoutEffect, useRef } from 'react'
 import { useFrame } from '@react-three/fiber'
-import { useEstate } from '@/store/useEstate'
 import {
-  BoxGeometry,
-  BufferGeometry,
+  AdditiveBlending,
   CanvasTexture,
   Color,
-  CylinderGeometry,
+  InstancedBufferAttribute,
   InstancedMesh,
   Matrix4,
   MeshBasicMaterial,
-  MeshLambertMaterial,
   PlaneGeometry,
   Quaternion,
   Vector3,
 } from 'three'
-import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
 import { usePrefersReducedMotion } from '@/hooks/usePrefersReducedMotion'
-import { COLORS, ROAD, TRAFFIC } from './constants'
+import { useEstate } from '@/store/useEstate'
+import { AMBIENT, DUSK, ROAD, TRAFFIC, type VehicleBody } from './constants'
 import { getCurvatureAt, getLanePoint, getLaneStretchAt, getTangentAt, roadLength, wrapU } from './curves'
+import { stage } from './dusk'
+import { axleGeometry, bodyGeometry, bodyMaterial, carLights, createBeamTexture, wheelMaterial } from './vehicles'
 
 const UP = new Vector3(0, 1, 0)
 const UNIT_SCALE = new Vector3(1, 1, 1)
-const VEHICLE_COUNT = TRAFFIC.directions.length
+const VEHICLE_COUNT = TRAFFIC.vehicles.length
+const BODIES: VehicleBody[] = ['sedan', 'suv']
 
 // Hoisted so the per-frame update allocates nothing.
 const position = new Vector3()
@@ -37,18 +37,9 @@ const basis = new Matrix4()
 const axleOffset = new Matrix4()
 const axleSpin = new Matrix4()
 const axleMatrix = new Matrix4()
-const blobMatrix = new Matrix4()
+const flatMatrix = new Matrix4()
 const heading = new Quaternion()
-const blobPosition = new Vector3()
-
-type TrafficResources = {
-  body: BufferGeometry
-  axle: BufferGeometry
-  bodyMaterial: MeshLambertMaterial
-  wheelMaterial: MeshLambertMaterial
-  blob: BufferGeometry
-  blobMaterial: MeshBasicMaterial
-}
+const flatPosition = new Vector3()
 
 // A soft dark oval, darkest in the middle, fading to nothing at the edge.
 function createBlobTexture(): CanvasTexture {
@@ -66,42 +57,17 @@ function createBlobTexture(): CanvasTexture {
   return new CanvasTexture(canvas)
 }
 
-let resources: TrafficResources | null = null
+let flats: { blob: PlaneGeometry; blobMaterial: MeshBasicMaterial; beam: PlaneGeometry; beamMaterial: MeshBasicMaterial } | null =
+  null
 
-function getResources(): TrafficResources {
-  if (resources) return resources
-
-  const hull = new BoxGeometry(TRAFFIC.bodyWidth, TRAFFIC.bodyHeight, TRAFFIC.bodyLength)
-  hull.translate(0, TRAFFIC.bodyCentreY, 0)
-
-  const cabin = new BoxGeometry(TRAFFIC.cabinWidth, TRAFFIC.cabinHeight, TRAFFIC.cabinLength)
-  cabin.translate(
-    0,
-    TRAFFIC.bodyCentreY + TRAFFIC.bodyHeight / 2 + TRAFFIC.cabinHeight / 2,
-    TRAFFIC.cabinOffsetZ,
-  )
-
-  // Both wheels of an axle live in one geometry, so spinning the pair is a
-  // single rotation about its own axis instead of four separate meshes.
-  const left = new CylinderGeometry(
-    TRAFFIC.wheelRadius,
-    TRAFFIC.wheelRadius,
-    TRAFFIC.wheelWidth,
-    14,
-  )
-  left.rotateZ(Math.PI / 2)
-  const right = left.clone()
-  left.translate(-TRAFFIC.track / 2, 0, 0)
-  right.translate(TRAFFIC.track / 2, 0, 0)
-
+function getFlats() {
+  if (flats) return flats
   const blob = new PlaneGeometry(TRAFFIC.blobWidth, TRAFFIC.blobLength)
   blob.rotateX(-Math.PI / 2)
-
-  resources = {
-    body: mergeGeometries([hull, cabin], false),
-    axle: mergeGeometries([left, right], false),
-    bodyMaterial: new MeshLambertMaterial(),
-    wheelMaterial: new MeshLambertMaterial({ color: COLORS.ink }),
+  // The beam's near end sits at the car's nose, so it reaches forward from it.
+  const beam = new PlaneGeometry(TRAFFIC.beamWidth, TRAFFIC.beamLength)
+  beam.rotateX(-Math.PI / 2)
+  flats = {
     blob,
     blobMaterial: new MeshBasicMaterial({
       color: '#000000',
@@ -110,29 +76,47 @@ function getResources(): TrafficResources {
       opacity: TRAFFIC.blobOpacity,
       depthWrite: false,
     }),
+    beam,
+    beamMaterial: new MeshBasicMaterial({
+      color: TRAFFIC.headlightGlow,
+      map: createBeamTexture(),
+      transparent: true,
+      opacity: 0,
+      depthWrite: false,
+      blending: AdditiveBlending,
+    }),
   }
-
-  return resources
+  return flats
 }
 
 type Vehicle = {
   u: number
   direction: number
   laneOffset: number
-  speedScale: number
+  cruise: number
+  speed: number
+  brake: number
   phase: number
   spin: number
+  body: VehicleBody
+  // Its index among the instances of its own body type.
+  slot: number
 }
 
 function createVehicles(): Vehicle[] {
-  const vehicles = TRAFFIC.directions.map((direction, index) => ({
-    u: TRAFFIC.startOffsets[index],
-    direction,
+  const slots: Record<VehicleBody, number> = { sedan: 0, suv: 0 }
+  const vehicles = TRAFFIC.vehicles.map((spec, index) => ({
+    u: spec.start,
+    direction: spec.direction,
     // Opposite directions sit on opposite sides of the centreline.
-    laneOffset: ROAD.laneOffset * direction,
-    speedScale: TRAFFIC.speedScales[index],
+    laneOffset: ROAD.laneOffset * spec.direction,
+    cruise: TRAFFIC.baseSpeed * spec.speedScale,
+    speed: TRAFFIC.baseSpeed * spec.speedScale,
+    brake: 0,
     phase: index * 2.1,
     spin: 0,
+    body: spec.body,
+    slot: slots[spec.body]++,
   }))
   // Build each lane's stretch table now, behind the loading screen, rather
   // than on the first frame the cars move.
@@ -140,47 +124,96 @@ function createVehicles(): Vehicle[] {
   return vehicles
 }
 
+// Road distance from one car forward to the next, in its direction of travel.
+function gapAhead(vehicle: Vehicle, other: Vehicle): number {
+  return wrapU((other.u - vehicle.u) * vehicle.direction) * roadLength
+}
+
+const counts = TRAFFIC.vehicles.reduce(
+  (total, spec) => ({ ...total, [spec.body]: total[spec.body] + 1 }),
+  { sedan: 0, suv: 0 } as Record<VehicleBody, number>,
+)
+
+// Each body type is one instanced mesh with a per-car brake level beside its
+// matrix and colour, so five cars of two shapes cost two draw calls.
+for (const kind of BODIES) {
+  if (counts[kind] > 0) {
+    bodyGeometry(kind).setAttribute('aBrake', new InstancedBufferAttribute(new Float32Array(counts[kind]), 1))
+  }
+}
+
 export function Traffic() {
-  const bodyRef = useRef<InstancedMesh>(null)
+  const bodyRefs = useRef<Record<VehicleBody, InstancedMesh | null>>({ sedan: null, suv: null })
   const axleRef = useRef<InstancedMesh>(null)
   const blobRef = useRef<InstancedMesh>(null)
+  const beamRef = useRef<InstancedMesh>(null)
   const prefersReducedMotion = usePrefersReducedMotion()
   const paused = useEstate((state) => state.paused)
 
   const vehicles = useRef<Vehicle[]>(createVehicles())
-  const { body, axle, bodyMaterial, wheelMaterial, blob, blobMaterial } = getResources()
+  const { blob, blobMaterial, beam, beamMaterial } = getFlats()
 
-  useEffect(() => {
-    const mesh = bodyRef.current
-    if (!mesh) return
+  useLayoutEffect(() => {
     const colour = new Color()
-    vehicles.current.forEach((_, index) => {
-      mesh.setColorAt(index, colour.set(TRAFFIC.colors[index]))
-    })
-    if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true
+    for (const vehicle of vehicles.current) {
+      const mesh = bodyRefs.current[vehicle.body]
+      const spec = TRAFFIC.vehicles[vehicles.current.indexOf(vehicle)]
+      mesh?.setColorAt(vehicle.slot, colour.set(spec.colour))
+    }
+    for (const kind of BODIES) {
+      const mesh = bodyRefs.current[kind]
+      if (mesh?.instanceColor) mesh.instanceColor.needsUpdate = true
+    }
   }, [])
 
   useFrame((state, delta) => {
-    const bodyMesh = bodyRef.current
     const axleMesh = axleRef.current
     const blobMesh = blobRef.current
-    if (!bodyMesh || !axleMesh || !blobMesh) return
+    const beamMesh = beamRef.current
+    if (!axleMesh || !blobMesh || !beamMesh) return
 
     const step = Math.min(delta, 0.05)
     const moving = !prefersReducedMotion && !paused
     const elapsed = state.clock.elapsedTime
+    const lights = stage(DUSK.lampStart, DUSK.lampEnd)
+    carLights.value = lights
+    beamMaterial.opacity = TRAFFIC.beamOpacity * lights
+    beamMesh.visible = lights > 0
 
-    vehicles.current.forEach((vehicle, index) => {
-      const wander =
-        1 + TRAFFIC.wanderAmplitude * Math.sin(TRAFFIC.wanderFrequency * elapsed + vehicle.phase)
-      const speed = TRAFFIC.baseSpeed * vehicle.speedScale * wander
-
+    const all = vehicles.current
+    all.forEach((vehicle, index) => {
       if (moving) {
+        const wander = 1 + TRAFFIC.wanderAmplitude * Math.sin(TRAFFIC.wanderFrequency * elapsed + vehicle.phase)
+        let target = vehicle.cruise * wander
+        // Follow the nearest car ahead in the same lane: close to followGap,
+        // then match its speed, and stop short of stopGap however it brakes.
+        let nearest: Vehicle | null = null
+        let gap = Infinity
+        for (const other of all) {
+          if (other === vehicle || other.direction !== vehicle.direction) continue
+          const distance = gapAhead(vehicle, other)
+          if (distance < gap) {
+            gap = distance
+            nearest = other
+          }
+        }
+        if (nearest && gap < TRAFFIC.followGap) {
+          const room = (gap - TRAFFIC.stopGap) / (TRAFFIC.followGap - TRAFFIC.stopGap)
+          target = Math.min(target, Math.max(0, nearest.speed * Math.max(room, 0) + room * vehicle.cruise * 0.2))
+        }
+        const braking = target < vehicle.speed - 0.05
+        const rate = braking ? TRAFFIC.braking : TRAFFIC.acceleration
+        vehicle.speed += Math.max(-rate * step, Math.min(rate * step, target - vehicle.speed))
+        const brakeGoal = braking ? 1 : 0
+        vehicle.brake += (brakeGoal - vehicle.brake) * (1 - Math.exp(-TRAFFIC.brakeLightRate * step))
+
         // u is centreline arc length; the lane's stretch turns it into the
         // distance this car actually covers, so its speed holds through bends.
         const stretch = getLaneStretchAt(vehicle.u, vehicle.laneOffset)
-        vehicle.u = wrapU(vehicle.u + (speed * step * vehicle.direction) / (roadLength * stretch))
-        vehicle.spin += (speed * step) / TRAFFIC.wheelRadius
+        vehicle.u = wrapU(vehicle.u + (vehicle.speed * step * vehicle.direction) / (roadLength * stretch))
+        vehicle.spin += (vehicle.speed * step) / TRAFFIC.wheelRadius
+      } else {
+        vehicle.brake = 0
       }
 
       getLanePoint(vehicle.u, vehicle.laneOffset, position)
@@ -192,25 +225,33 @@ export function Traffic() {
       basis.makeBasis(right, up, forward)
       orientation.setFromRotationMatrix(basis)
 
-      // The blob lies flat and follows the heading, never the body's roll.
+      // Blob and beam lie flat and follow the heading, never the body's roll.
       heading.copy(orientation)
-      blobPosition.set(position.x, TRAFFIC.blobY, position.z)
-      blobMatrix.compose(blobPosition, heading, UNIT_SCALE)
-      blobMesh.setMatrixAt(index, blobMatrix)
+      flatPosition.set(position.x, TRAFFIC.blobY, position.z)
+      flatMatrix.compose(flatPosition, heading, UNIT_SCALE)
+      blobMesh.setMatrixAt(index, flatMatrix)
+      flatPosition.set(
+        position.x + forward.x * TRAFFIC.beamAhead,
+        TRAFFIC.beamY,
+        position.z + forward.z * TRAFFIC.beamAhead,
+      )
+      flatMatrix.compose(flatPosition, heading, UNIT_SCALE)
+      beamMesh.setMatrixAt(index, flatMatrix)
 
       const bank = Math.max(
         -TRAFFIC.maxBank,
-        Math.min(
-          TRAFFIC.maxBank,
-          getCurvatureAt(vehicle.u) * vehicle.direction * TRAFFIC.bankScale,
-        ),
+        Math.min(TRAFFIC.maxBank, getCurvatureAt(vehicle.u) * vehicle.direction * TRAFFIC.bankScale),
       )
       roll.setFromAxisAngle(forward, bank)
       orientation.premultiply(roll)
 
       position.y = ROAD.roadY
       carMatrix.compose(position, orientation, UNIT_SCALE)
-      bodyMesh.setMatrixAt(index, carMatrix)
+      const bodyMesh = bodyRefs.current[vehicle.body]
+      if (bodyMesh) {
+        bodyMesh.setMatrixAt(vehicle.slot, carMatrix)
+        ;(bodyMesh.geometry.attributes.aBrake as InstancedBufferAttribute).setX(vehicle.slot, vehicle.brake)
+      }
 
       for (let axleIndex = 0; axleIndex < 2; axleIndex += 1) {
         const z = axleIndex === 0 ? TRAFFIC.wheelbase / 2 : -TRAFFIC.wheelbase / 2
@@ -221,31 +262,61 @@ export function Traffic() {
       }
     })
 
-    bodyMesh.instanceMatrix.needsUpdate = true
+    for (const kind of BODIES) {
+      const mesh = bodyRefs.current[kind]
+      if (!mesh) continue
+      mesh.instanceMatrix.needsUpdate = true
+      mesh.geometry.attributes.aBrake.needsUpdate = true
+    }
     axleMesh.instanceMatrix.needsUpdate = true
     blobMesh.instanceMatrix.needsUpdate = true
+    beamMesh.instanceMatrix.needsUpdate = true
   })
 
+  // Culling is off for every traffic mesh. An instanced mesh's bounds are
+  // computed once, from wherever its instances were at that moment, and cars
+  // that have since driven outside them would be culled mid-road.
   return (
     <group>
+      {BODIES.filter((kind) => counts[kind] > 0).map((kind) => (
+        <instancedMesh
+          key={kind}
+          ref={(mesh) => {
+            bodyRefs.current[kind] = mesh
+            mesh?.layers.enable(AMBIENT.reflectLayer)
+          }}
+          args={[bodyGeometry(kind), bodyMaterial, counts[kind]]}
+          castShadow={false}
+          receiveShadow={false}
+          frustumCulled={false}
+        />
+      ))}
       <instancedMesh
-        ref={bodyRef}
-        args={[body, bodyMaterial, VEHICLE_COUNT]}
+        ref={(mesh) => {
+          axleRef.current = mesh
+          mesh?.layers.enable(AMBIENT.reflectLayer)
+        }}
+        args={[axleGeometry(), wheelMaterial, VEHICLE_COUNT * 2]}
         castShadow={false}
         receiveShadow={false}
-      />
-      <instancedMesh
-        ref={axleRef}
-        args={[axle, wheelMaterial, VEHICLE_COUNT * 2]}
-        castShadow={false}
-        receiveShadow={false}
+        frustumCulled={false}
       />
       <instancedMesh
         ref={blobRef}
         args={[blob, blobMaterial, VEHICLE_COUNT]}
         castShadow={false}
         receiveShadow={false}
+        frustumCulled={false}
         raycast={() => null}
+      />
+      <instancedMesh
+        ref={beamRef}
+        args={[beam, beamMaterial, VEHICLE_COUNT]}
+        castShadow={false}
+        receiveShadow={false}
+        frustumCulled={false}
+        raycast={() => null}
+        visible={false}
       />
     </group>
   )

@@ -60,30 +60,75 @@ export const DRIVEWAY = {
   y: 0.05,
 } as const
 
+export type VehicleBody = 'sedan' | 'suv'
+
 export const TRAFFIC = {
-  // Two vehicles one way, one the other.
-  directions: [1, 1, -1],
-  startOffsets: [0, 0.42, 0.73],
-  speedScales: [1, 0.88, 0.95],
+  // Three one way round the ring, two the other. Each car's cruising speed is
+  // baseSpeed times its scale; start is where round the loop it begins.
+  vehicles: [
+    { direction: 1, start: 0, speedScale: 1, colour: '#c2603f', body: 'sedan' },
+    { direction: 1, start: 0.36, speedScale: 0.9, colour: '#37506b', body: 'suv' },
+    { direction: 1, start: 0.68, speedScale: 0.95, colour: '#e9e4d8', body: 'sedan' },
+    { direction: -1, start: 0.18, speedScale: 0.97, colour: '#6b7f5a', body: 'suv' },
+    { direction: -1, start: 0.6, speedScale: 0.92, colour: '#9aa3ad', body: 'sedan' },
+  ] as { direction: number; start: number; speedScale: number; colour: string; body: VehicleBody }[],
   baseSpeed: 3.2,
   // A touch of wander so they never look metronomic.
   wanderAmplitude: 0.06,
   wanderFrequency: 0.8,
+  // Following: a car closes on the one ahead until the gap between them is
+  // followGap, and never lets it shrink below stopGap. Accelerating is gentler
+  // than braking, as in a real car.
+  followGap: 3.2,
+  stopGap: 1.1,
+  acceleration: 1.8,
+  braking: 4.5,
+  // How quickly the brake lights come on and fade.
+  brakeLightRate: 8,
   maxBank: 0.052,
   bankScale: 9,
-  bodyLength: 1.7,
-  bodyWidth: 0.8,
-  bodyHeight: 0.38,
-  bodyCentreY: 0.26,
-  cabinLength: 0.78,
-  cabinWidth: 0.68,
-  cabinHeight: 0.3,
-  cabinOffsetZ: -0.12,
   wheelRadius: 0.13,
   wheelWidth: 0.12,
+  hubRadius: 0.075,
   track: 0.74,
-  wheelbase: 0.98,
-  colors: ['#c2603f', '#37506b', '#f3efe6'],
+  wheelbase: 1.0,
+  bodyWidth: 0.8,
+  // Side profiles as [along, up] points, front to the right. The lower body
+  // carries the paint, the cabin is glass, and a thin painted roof sits on it.
+  sedan: {
+    lower: [[-0.86, 0.12], [-0.86, 0.38], [-0.76, 0.46], [0.5, 0.46], [0.86, 0.39], [0.86, 0.12]] as [number, number][],
+    cabin: [[-0.46, 0.46], [-0.24, 0.7], [0.18, 0.7], [0.46, 0.46]] as [number, number][],
+    roof: { from: -0.22, to: 0.16, top: 0.7 },
+    lightY: 0.34,
+  },
+  suv: {
+    lower: [[-0.9, 0.12], [-0.9, 0.5], [0.62, 0.5], [0.9, 0.44], [0.9, 0.12]] as [number, number][],
+    cabin: [[-0.86, 0.5], [-0.8, 0.84], [0.28, 0.84], [0.58, 0.5]] as [number, number][],
+    roof: { from: -0.8, to: 0.26, top: 0.84 },
+    lightY: 0.4,
+  },
+  cabinWidth: 0.7,
+  roofThickness: 0.035,
+  bodyBevel: 0.03,
+  glass: '#26313b',
+  trim: '#2b2f33',
+  hub: '#b9bec4',
+  headlight: '#f4efe2',
+  taillight: '#b3322a',
+  // Emitted light, by colour, once the lamps are on at dusk. Tail lights
+  // glow dimly at night and fully under braking at any time of day.
+  headlightGlow: '#fff1cc',
+  taillightGlow: '#ff3b2a',
+  headlightStrength: 2.4,
+  taillightNight: 0.55,
+  taillightStrength: 2.2,
+  // The pool of headlight thrown on the road ahead at dusk.
+  beamLength: 2.6,
+  beamWidth: 1.3,
+  beamAhead: 1.9,
+  beamY: 0.094,
+  beamOpacity: 0.55,
+  beamTextureSize: 64,
   // Cars don't cast real shadows: they move every frame, and a moving caster
   // would force the whole shadow map to redraw every frame. A soft blob under
   // each one grounds it instead, drawn just above the road markings.
@@ -259,6 +304,118 @@ export const ESTATE = {
   noticeBoardWidth: 1.5,
   noticeBoardHeight: 0.95,
   noticeBoardPostHeight: 0.75,
+} as const
+
+// Ambient motion that runs on its own clock: tree sway, water, birds. The
+// clock stops while motion is paused or reduced, which freezes all of it.
+export const AMBIENT = {
+  // Render layer for what the pond reflects. The mirror camera draws only
+  // this layer, so the reflection costs a handful of draw calls, not a scene.
+  reflectLayer: 1,
+} as const
+
+// The pond: a mirror of what stands around it, broken up by ripples.
+export const WATER = {
+  // Reflection resolution. Ripples blur it anyway, so it can be small.
+  textureSize: 512,
+  textureSizeLowTier: 256,
+  segments: 48,
+  // Pulls the mirror's clip plane down a touch, so nothing standing right at
+  // the waterline leaks a sliver into the reflection.
+  clipBias: 0.003,
+  // Ripples: how far they shift the reflection, their size and speed.
+  rippleStrength: 0.008,
+  rippleScale: 2.4,
+  rippleSpeed: 0.9,
+  // Share of the reflection that shows looking straight down, and at the
+  // most grazing angle: water mirrors more the flatter you look across it.
+  // The mix happens in linear light, where a pale sky outweighs the water, so
+  // these read lower than they look.
+  reflectNear: 0.12,
+  reflectFar: 0.7,
+  // Water tints what it reflects: this much of the reflection takes the
+  // water's colour, so a pale sky still reads as a blue pond.
+  reflectionTint: 0.3,
+  fresnelPower: 3,
+  // The water darkens towards the rim, and brightens a little where ripples
+  // crest.
+  edgeDarkening: 0.3,
+  // The water's body is a shade deeper than the palette's flat water colour,
+  // so the sky's sheen reads as lying on top of it.
+  depth: 0.72,
+  // The water is unlit, so it does not dim with the lights at dusk the way
+  // every lit surface does. It is darkened by this much instead.
+  duskLight: 0.42,
+  glint: 0.22,
+} as const
+
+// A small flock circling over the estate by day. At dusk they head off,
+// wider and higher, until they are out of sight.
+export const BIRDS = {
+  // Two loose groups circling opposite ways: [radius, height, angular speed].
+  groups: [
+    [11, 7.5, 0.22],
+    [15.5, 9.2, -0.17],
+  ] as [number, number, number][],
+  perGroup: 4,
+  // How far a bird strays from its group's circle, across and up.
+  spread: 1.6,
+  lift: 0.7,
+  wingSpan: 0.42,
+  flapSpeed: 9,
+  flapHeight: 0.16,
+  // Banking into the turn, in radians.
+  bank: 0.35,
+  colour: '#2b2f33',
+  // At full dusk the flock is this much further out and higher up.
+  leaveRadius: 34,
+  leaveHeight: 12,
+} as const
+
+// Two species share the estate. Heights are for a tree at scale 1.
+export const TREES = {
+  broadleafShare: 0.55,
+  speciesSeed: 7351,
+  broadleaf: {
+    trunkHeight: 1.0,
+    trunkRadiusTop: 0.075,
+    trunkRadiusBottom: 0.12,
+    // Canopy clumps as [x, y, z, radius]: a few overlapping blobs read as one
+    // irregular crown rather than a lollipop.
+    clumps: [
+      [0, 1.55, 0, 0.62],
+      [0.34, 1.34, 0.12, 0.44],
+      [-0.3, 1.4, -0.18, 0.47],
+      [0.06, 1.98, -0.06, 0.42],
+    ] as [number, number, number, number][],
+    // Share of each vertex's distance from its clump centre it may move by.
+    lumpiness: 0.14,
+  },
+  conifer: {
+    trunkHeight: 0.75,
+    trunkRadiusTop: 0.06,
+    trunkRadiusBottom: 0.1,
+    // Tiers as [radius, height, centre y], widest at the bottom.
+    tiers: [
+      [0.72, 0.95, 0.95],
+      [0.56, 0.85, 1.45],
+      [0.38, 0.75, 1.95],
+    ] as [number, number, number][],
+    segments: 9,
+    lumpiness: 0.07,
+  },
+  // Crowns are darker underneath and lighter on top: a cheap stand-in for
+  // the light a real crown blocks from its own lower branches.
+  shadeBottom: 0.7,
+  shadeTop: 1.12,
+  // Per-tree variation, so a stand of trees never reads as one repeated tree.
+  brightnessRange: 0.11,
+  warmthRange: 0.05,
+  // Wind: how far a crown's top moves, how fast, and where bending starts.
+  swayAmplitude: 0.045,
+  swaySpeed: 1.1,
+  swayBase: 0.7,
+  swayHeight: 1.6,
 } as const
 
 // The wall and hedge that run the slab's perimeter, and the one gap in them

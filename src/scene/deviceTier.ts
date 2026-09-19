@@ -8,7 +8,7 @@ import { PERF } from './constants'
 const LOW_TIER_GPU =
   /swiftshader|llvmpipe|software|mali|adreno\D*[1-5]\d{2}|powervr|intel.*(hd|uhd) graphics/i
 
-function isLowTier(renderer: WebGLRenderer): boolean {
+export function isLowTier(renderer: WebGLRenderer): boolean {
   if ((navigator.hardwareConcurrency || 8) <= PERF.lowTierCores) return true
 
   const memory = (navigator as Navigator & { deviceMemory?: number }).deviceMemory

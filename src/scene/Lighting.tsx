@@ -4,7 +4,7 @@ import { Color, type DirectionalLight, type HemisphereLight } from 'three'
 import { usePrefersReducedMotion } from '@/hooks/usePrefersReducedMotion'
 import { useEstate } from '@/store/useEstate'
 import { themes } from '@/theme'
-import { DUSK, LIGHTING } from './constants'
+import { AMBIENT, DUSK, LIGHTING } from './constants'
 import { applyColours, dusk, stage } from './dusk'
 import { requestShadowUpdate, takeShadowRequest } from './shadows'
 
@@ -67,6 +67,13 @@ export function Lighting() {
       gl.shadowMap.autoUpdate = true
     }
   }, [gl, scene])
+
+  // three filters lights by layer as well as meshes: without this the
+  // pond's mirror camera would see its reflection completely unlit.
+  useLayoutEffect(() => {
+    sunRef.current.layers.enable(AMBIENT.reflectLayer)
+    hemiRef.current.layers.enable(AMBIENT.reflectLayer)
+  }, [])
 
   useLayoutEffect(() => {
     scene.background = sky
