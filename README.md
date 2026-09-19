@@ -1,4 +1,4 @@
-# Nilabh — Portfolio
+# Vaishnavi — Portfolio
 
 Personal portfolio site with an interactive 3D estate hero. Vite + React + TypeScript + @react-three/fiber.
 

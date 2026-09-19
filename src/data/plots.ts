@@ -82,25 +82,25 @@ function ringPlacement(index: number, total: number): Pick<Plot, 'position' | 'r
 
 const definitions: PlotDefinition[] = [
   {
-    id: "spendsense",
+    id: "opsdesk",
     plotNumber: "Plot 01",
-    title: "SpendSense",
-    shortName: "SpendSense",
-    eyebrow: "Plot 01 · Personal finance",
-    roomHeadline: "Spending, with the odd ones flagged",
-    subhead: "An expense tracker that explains every anomaly it raises.",
+    title: "OpsDesk",
+    shortName: "OpsDesk",
+    eyebrow: "Plot 01 · Internal tool",
+    roomHeadline: "Requests that route themselves",
+    subhead: "IT, procurement and leave requests, off spreadsheets and email.",
     kind: "project",
-    tagline: "Expense tracker with explainable anomaly detection",
+    tagline: "Workflow automation and request triage portal",
     summary:
-      "A full-stack MERN expense tracker whose anomaly detection is rule-based and transparent, so every flag can be traced to its reasons.",
+      "An internal business application that automates IT, procurement and leave request workflows, with multi-level approvals and a classifier that routes each request to the right team.",
     problem:
-      "An unusual expense is only useful to flag if the person can see why it was flagged. SpendSense scores transactions on signals anyone can check.",
+      "Requests were tracked through spreadsheets and email. OpsDesk gives them one workflow, with approvals, roles, audit logs and automatic routing.",
     highlights: [
-      "Anomaly score from three weighted signals",
-      "React dashboard with Recharts",
-      "Tested against ~120 demo transactions with 6 planted anomalies",
+      "Multi-level approvals with JWT role-based access",
+      "Classifier routes requests with ~85% accuracy",
+      "Deployed on Render with CI/CD through GitHub Actions",
     ],
-    stack: ["React", "Node.js", "Express", "MongoDB", "JWT"],
+    stack: ["React", "TypeScript", "Node.js", "Express", "MongoDB", "MySQL", "Flask", "scikit-learn"],
     links: [{ label: "GitHub", href: "#" }],
     footprint: { w: 3.4, d: 2.8 },
     floors: 2,
@@ -108,40 +108,40 @@ const definitions: PlotDefinition[] = [
     props: ['chimney', 'scooter'],
     palette: { wall: 'sand', roof: 'clay', trim: 'ink' },
     exhibits: [
-      exhibit('score', 'Anomaly scorer', 'barTerminal', 'Every flag comes with the reasons behind it.', [
-        'Each transaction gets an anomaly score built from three weighted signals: how far it deviates from normal spending, how rare its category is, and when it happened.',
-        'The detection is rule-based on purpose. Because the score is a weighted sum of signals rather than a black box, a flagged transaction can always be traced back to what pushed it up.',
+      exhibit('workflows', 'Request board', 'kanbanWall', 'Every request on one board, not in an inbox.', [
+        'OpsDesk automates IT, procurement and leave request workflows, replacing tracking by spreadsheet and email. Each request moves through multi-level approvals.',
+        'Role-based access control with JWT separates what employees, managers and admins can see and do. Request data is served by RESTful APIs in Node.js and Express, backed by MongoDB.',
       ]),
-      exhibit('dashboard', 'Category board', 'tileBoard', 'Where the money went, at a glance.', [
-        'A React dashboard, charted with Recharts, shows spending so that a flagged transaction can be read against everything around it.',
-        'Behind it are RESTful APIs on Node.js and Express with MongoDB, and JWT authentication on the API.',
+      exhibit('routing', 'Routing rack', 'statusRack', 'Incoming requests sent to the right team, about 85% of the time.', [
+        'A TF-IDF and Logistic Regression text classifier, trained on about 2,000 labelled tickets, auto-categorises each incoming request and routes it to the right team with about 85% accuracy.',
+        'The model is served through a Flask microservice alongside the Node.js backend.',
       ]),
-      exhibit('demo', 'Receipt cabinet', 'receiptCabinet', 'Six planted anomalies, and tests that expect to find them.', [
-        'To show the scoring working without anyone\'s real finances, I built a realistic demo set of about 120 transactions with six anomalies planted in it.',
-        'Unit tests cover the edge cases in the scoring, so its behaviour is checked end to end rather than judged by eye on a chart.',
+      exhibit('audit', 'Audit ledger', 'stampLedger', 'Every approval on the record, with SLA reports from it.', [
+        'Audit logs and SLA reporting live in a normalized MySQL schema, and SQL queries with joins, aggregations and indexes feed an analytics dashboard.',
+        'OpsDesk also integrates the Google Sheets API and Nodemailer email alerts, ships with Jest unit tests and test documentation, and is deployed on Render with CI/CD through GitHub Actions.',
       ]),
     ],
   },
   {
-    id: "pulsedesk",
+    id: "rewardmax",
     plotNumber: "Plot 02",
-    title: "PulseDesk",
-    shortName: "PulseDesk",
-    eyebrow: "Plot 02 · In progress",
-    roomHeadline: "Reading the mood of the inbox",
-    subhead: "Classifying customer feedback so urgent complaints surface first.",
+    title: "RewardMax",
+    shortName: "RewardMax",
+    eyebrow: "Plot 02 · Personal finance",
+    roomHeadline: "Which card pays most, worked out for you",
+    subhead: "A rewards optimizer that ranks offers against logged spend.",
     kind: "project",
-    tagline: "Customer feedback sentiment dashboard",
+    tagline: "Smart rewards and cashback optimizer",
     summary:
-      "A customer feedback system, being built now, that classifies sentiment and urgency and tracks how sentiment moves over time.",
+      "A rewards and cashback optimizer that ranks offers across 12 reward categories by reward rate, monthly cap and logged spend.",
     problem:
-      "In a large pile of feedback, the urgent complaints get buried among routine messages. PulseDesk sorts them so support can triage faster.",
+      "Comparing reward offers by hand is slow. RewardMax ranks them automatically, cutting manual comparison time by about 35%.",
     highlights: [
-      "TF-IDF and Logistic Regression classifier",
-      "MongoDB ingestion pipeline and admin dashboard",
-      "Automatic tagging of urgent complaints",
+      "Formula-based optimization across 12 reward categories",
+      "~150 requests per second at ~120ms average latency",
+      "React spend dashboard",
     ],
-    stack: ["React", "Node.js", "Express", "MongoDB", "scikit-learn"],
+    stack: ["React", "Node.js", "Express", "MongoDB", "Flask"],
     links: [{ label: "GitHub", href: "#" }],
     footprint: { w: 3.0, d: 3.0 },
     floors: 2,
@@ -149,40 +149,40 @@ const definitions: PlotDefinition[] = [
     props: ['dish', 'balcony'],
     palette: { wall: 'paper', roof: 'indigo', trim: 'ink' },
     exhibits: [
-      exhibit('triage', 'Triage wall', 'kanbanWall', 'Urgent complaints tagged the moment they arrive.', [
-        'Urgent complaints are tagged automatically, combining negative sentiment with keyword-based signals, so they can go to the front of the support queue.',
-        'The aim is faster triage: the messages that need an answer today shouldn\'t wait behind the ones that don\'t.',
+      exhibit('engine', 'Offer ranker', 'barTerminal', 'About 35% less time spent comparing offers.', [
+        'At the centre of RewardMax is a formula-based rewards-optimization engine that ranks offers by reward rate, monthly cap and the spend a person has logged.',
+        'Doing that ranking automatically cut manual comparison time by about 35%.',
       ]),
-      exhibit('classifier', 'Customer voice', 'headset', 'Every message read for mood and urgency.', [
-        'PulseDesk classifies each piece of customer feedback for sentiment and for urgency, using TF-IDF features and a Logistic Regression model built with scikit-learn.',
-        'It is still in progress: the classifier is being built alongside the rest of the pipeline.',
+      exhibit('categories', 'Category board', 'tileBoard', 'Twelve reward categories, ranked on the same terms.', [
+        'The engine covers 12 reward categories, each ranked on the same three measures: reward rate, monthly cap and logged spend.',
+        'A React.js spend dashboard puts the logged spending in front of the user.',
       ]),
-      exhibit('pipeline', 'Ingestion rack', 'statusRack', 'Feedback in, trends out.', [
-        'A MongoDB ingestion pipeline brings the feedback in, and an administrative dashboard shows how customer sentiment moves over time.',
-        'Like the rest of PulseDesk, this part is being built now.',
+      exhibit('backend', 'Receipt cabinet', 'receiptCabinet', 'About 150 requests a second, at about 120ms.', [
+        'Behind the dashboard is a Node.js and Express REST API backed by MongoDB, working alongside a Python Flask microservice.',
+        'The backend sustains about 150 requests per second at about 120ms average latency.',
       ]),
     ],
   },
   {
-    id: "labtrack",
+    id: "churnguard",
     plotNumber: "Plot 03",
-    title: "LabTrack",
-    shortName: "LabTrack",
-    eyebrow: "Plot 03 · Internal tool",
-    roomHeadline: "The lab's equipment, off the spreadsheet",
-    subhead: "An asset and request portal built from what lab staff asked for.",
+    title: "ChurnGuard",
+    shortName: "ChurnGuard",
+    eyebrow: "Plot 03 · Customer analytics",
+    roomHeadline: "Finding the customers about to leave",
+    subhead: "A churn risk dashboard for relationship managers.",
     kind: "project",
-    tagline: "Lab asset and request management portal",
+    tagline: "Customer loyalty and churn risk dashboard",
     summary:
-      "An internal portal that tracks lab equipment, issue and return requests and their approvals, replacing a manual spreadsheet process.",
+      "A churn risk dashboard that scores customers with a Logistic Regression model over RFM features and bands them by risk, so relationship managers know whom to reach first.",
     problem:
-      "Lab equipment, requests and approvals were tracked by hand in a spreadsheet. LabTrack gives them a proper system with roles, reports and an audit trail.",
+      "Relationship managers can't reach every customer at once. ChurnGuard ranks customers by churn risk to help prioritise outreach.",
     highlights: [
-      "Normalized MySQL schema with audit logs",
-      "JWT auth with admin, lab staff and student roles",
-      "Deployed on Render with CI/CD through GitHub Actions",
+      "RFM feature pipeline over ~5,000 customer records",
+      "87% accuracy and a 0.84 F1-score",
+      "~18% of 900+ accounts flagged as high-risk",
     ],
-    stack: ["React", "Node.js", "Express", "MySQL", "JWT"],
+    stack: ["React", "Node.js", "Express", "MongoDB", "Python", "scikit-learn", "Pandas", "NumPy"],
     links: [{ label: "GitHub", href: "#" }],
     footprint: { w: 3.8, d: 2.6 },
     floors: 1,
@@ -190,17 +190,17 @@ const definitions: PlotDefinition[] = [
     props: ['acUnit', 'hedge'],
     palette: { wall: 'sand', roof: 'ochre', trim: 'ink' },
     exhibits: [
-      exhibit('requests', 'Issue counter', 'docScanner', 'Borrowing lab equipment, without the spreadsheet.', [
-        'LabTrack started with the people who run the lab. I gathered requirements from lab staff and wrote a technical design document before building: a portal that tracks equipment, issue and return requests, and their approvals.',
-        'Access follows roles. RESTful APIs with JWT authentication and role-based access control give admins, lab staff and students different permissions, with input validation and centralised error handling throughout.',
+      exhibit('features', 'Customer records', 'matchedStack', 'Five thousand customer records, turned into signals.', [
+        'ChurnGuard starts with an RFM-based feature-engineering pipeline, built in Pandas and NumPy over about 5,000 customer records.',
+        'RFM stands for recency, frequency and monetary value: how recently, how often and how much each customer buys. Those features are what the model learns churn risk from.',
       ]),
-      exhibit('ledger', 'Approval ledger', 'stampLedger', 'Every request and approval on the record.', [
-        'The data lives in a normalized MySQL schema of assets, users, requests and audit logs, with foreign keys and indexes.',
-        'SQL queries with joins and aggregations produce the reports the lab needs: equipment running low, and returns that are overdue.',
+      exhibit('model', 'Risk monitor', 'lineMonitor', '87% accuracy, and an F1-score of 0.84.', [
+        'A Logistic Regression classifier trained on those features reaches 87% accuracy and a 0.84 F1-score.',
+        'Its results are exposed through an Express.js REST API and followed on a React.js monitoring dashboard.',
       ]),
-      exhibit('exports', 'Export table', 'matchedStack', 'Reports in Google Sheets, alerts by email.', [
-        'LabTrack connects to the tools around it: reports export to Google Sheets through its API, and Nodemailer sends email alerts.',
-        'It is tested and shipped like production software, with Jest unit tests, API documentation in Postman, and deployment on Render with CI/CD through GitHub Actions.',
+      exhibit('bands', 'Risk dials', 'meterPanel', 'The riskiest customers, flagged for outreach first.', [
+        'Customers are banded into low, medium and high risk. Across 900+ accounts, about 18% were flagged as high-risk.',
+        'The bands are there to help relationship managers prioritise outreach, starting with the customers most likely to leave.',
       ]),
     ],
   },
@@ -210,7 +210,7 @@ const definitions: PlotDefinition[] = [
     title: "About",
     shortName: "About",
     eyebrow: "About · Thapar Institute",
-    roomHeadline: "Nilabh, briefly",
+    roomHeadline: "Vaishnavi, briefly",
     subhead: "Computer Engineering at Thapar, Batch of 2028.",
     kind: "about",
     tagline: "Who I am",
@@ -225,22 +225,22 @@ const definitions: PlotDefinition[] = [
     props: ['chimney', 'hedge'],
     palette: { wall: 'sand', roof: 'sage', trim: 'ink' },
     exhibits: [
-      exhibit('coursework', 'Coursework', 'bookshelf', 'Computer Engineering, with a 9.00 CGPA so far.', [
-        'I\'m studying for a B.Tech in Computer Engineering at Thapar Institute of Engineering and Technology, from August 2024 to May 2028, with a CGPA of 9.00.',
+      exhibit('coursework', 'Coursework', 'bookshelf', 'Computer Engineering, with an 8.82 CGPA.', [
+        'I\'m studying for a B.Tech in Computer Engineering at Thapar Institute of Engineering and Technology, from August 2024 to May 2028, with a CGPA of 8.82.',
         'Coursework so far: Data Structures and Algorithms, Object-Oriented Programming, Operating Systems, Database Management Systems, Computer Networks and Software Engineering.',
       ]),
-      exhibit('teams', 'Two teams', 'laptopDesk', 'Coordinating people, and building for events.', [
-        'From September 2024 to March 2025 I was a coordinator at the Student Alumni Interaction Cell: the main point of contact between alumni and students, planning engagement events and keeping follow-ups on time.',
-        'Over the same months I was on the web team of the Microsoft Learn Student Chapter, where I built the About Us and Timeline pages for Makethon-7 with designers and event organisers.',
+      exhibit('roles', 'Four roles', 'laptopDesk', 'Placements, a hall of 900 residents, alumni and a web team.', [
+        'Since August 2025 I\'ve been a Student Placement Representative, coordinating between the placement cell and visiting companies on drive schedules and registrations, and a Proctor at Vahini Hall, responsible for student welfare, discipline and administration for 900+ residents.',
+        'From September 2024 to March 2025 I organised alumni-student outreach events for 200+ students as a coordinator at the Student Alumni Interaction Cell, and on the Microsoft Learn Student Chapter web team I built the About Us and Timeline pages for Makethon-7 in HTML, CSS and JavaScript, for 300+ visitors.',
       ]),
       exhibit(
         'numbers',
         'Three numbers',
         'statsFrames',
-        'Problem solving, measured.',
+        'Problem solving, and a few wins along the way.',
         [
-          '200+ data structures and algorithms problems solved on LeetCode, with a contest rating of 1540.',
-          'A 9.00 CGPA at Thapar, and before that the 97th percentile in JEE Mains 2024.',
+          '140+ data structures and algorithms problems solved on LeetCode, a 1540 contest rating, and an 8.82 CGPA.',
+          'In 2026, semifinalist in the Flipkart GRID 8.0 Software Development Challenge and Best Speaker at the Model United Nations Society. Before that: gold at the Inter-University Girls\' Badminton at PEC Chandigarh, 2nd prize at the Thapar Quizzing Club GK Quiz, and 3rd prize at Construct, Thapar Civil Society.',
         ],
         profile.stats.map((stat) => `${stat.value}|${stat.label}`),
       ),
