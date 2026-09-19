@@ -99,10 +99,11 @@ export function Pond() {
     uniforms.uTime = ambientTime
     trackColour(uniforms.uTint.value as Color, 'water')
 
-    // The mirror camera draws only what is marked to be reflected: trees,
-    // lamps, cars and the park's own dressing. The sky comes for free as the
-    // background. Buildings are left out: from any height the camera uses
-    // they sit beyond what the pond can mirror, and they are most of the cost.
+    // The mirror camera draws only what is marked to be reflected: the sky,
+    // trees, lamps, car bodies and the fountain. Everything else is left out
+    // because the pond cannot show it from the camera's heights — buildings
+    // and the boundary sit too far out, bowl water lies flat — and each would
+    // cost a draw call for nothing.
     const render = mirror.onBeforeRender
     mirror.onBeforeRender = (renderer: WebGLRenderer, scene: Scene, camera: Camera, ...rest) => {
       uniforms.uLight.value = 1 - (1 - WATER.duskLight) * duskLevel()

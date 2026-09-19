@@ -466,7 +466,9 @@ export function Props() {
   return (
     <group>
       <mesh geometry={parts.flat} material={dressingMaterial} receiveShadow castShadow={false} />
-      <mesh ref={reflected} geometry={parts.standing} material={dressingMaterial} castShadow receiveShadow />
+      {/* Not reflected: the wall and gate stand at the slab's edge, beyond
+          anything the pond can mirror from the camera's heights. */}
+      <mesh geometry={parts.standing} material={dressingMaterial} castShadow receiveShadow />
 
       <TreeInstances trees={parts.trees} species="broadleaf" />
       <TreeInstances trees={parts.trees} species="conifer" />

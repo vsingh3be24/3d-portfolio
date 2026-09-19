@@ -205,7 +205,8 @@ export function Fountain() {
     <group>
       <mesh ref={reflected} geometry={stone} material={stoneMaterial} castShadow receiveShadow raycast={() => null} />
       {/* Surfaces first, then the falls over them. */}
-      <mesh ref={reflected} geometry={surfaces} material={surfaceMaterial} renderOrder={1} raycast={() => null} />
+      {/* Flat bowl water is invisible in a mirror below it, so it is not reflected. */}
+      <mesh geometry={surfaces} material={surfaceMaterial} renderOrder={1} raycast={() => null} />
       <mesh ref={reflected} geometry={falls} material={fallMaterial} renderOrder={2} raycast={() => null} />
     </group>
   )

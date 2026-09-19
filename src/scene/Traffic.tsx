@@ -292,10 +292,8 @@ export function Traffic() {
         />
       ))}
       <instancedMesh
-        ref={(mesh) => {
-          axleRef.current = mesh
-          mesh?.layers.enable(AMBIENT.reflectLayer)
-        }}
+        // Wheels are left out of the pond's reflection: the bodies carry it.
+        ref={axleRef}
         args={[axleGeometry(), wheelMaterial, VEHICLE_COUNT * 2]}
         castShadow={false}
         receiveShadow={false}

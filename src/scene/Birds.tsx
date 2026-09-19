@@ -13,7 +13,7 @@ import {
 } from 'three'
 import { usePrefersReducedMotion } from '@/hooks/usePrefersReducedMotion'
 import { ambientTime } from './ambient'
-import { AMBIENT, BIRDS } from './constants'
+import { BIRDS } from './constants'
 import { duskLevel } from './dusk'
 
 const COUNT = BIRDS.groups.length * BIRDS.perGroup
@@ -134,10 +134,7 @@ export function Birds() {
 
   return (
     <instancedMesh
-      ref={(mesh) => {
-        meshRef.current = mesh
-        mesh?.layers.enable(AMBIENT.reflectLayer)
-      }}
+      ref={meshRef}
       args={[geometry, material, COUNT]}
       castShadow={false}
       receiveShadow={false}
