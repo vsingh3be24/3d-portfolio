@@ -314,6 +314,18 @@ export const AMBIENT = {
   reflectLayer: 1,
 } as const
 
+// The sky dome: a sphere coloured by the direction it is seen in, centred on
+// whichever camera is drawing it. Its radius must stay inside the camera's
+// far plane.
+export const SKY = {
+  radius: 120,
+  // How quickly the colour leaves the horizon, looking up and looking down.
+  // Below 1 widens the horizon band; the camera mostly looks down, so the
+  // lower band is where the look of the backdrop is decided.
+  upCurve: 0.55,
+  downCurve: 0.8,
+} as const
+
 // The pond: a mirror of what stands around it, broken up by ripples.
 export const WATER = {
   // Reflection resolution. Ripples blur it anyway, so it can be small.
@@ -345,7 +357,7 @@ export const WATER = {
   depth: 0.72,
   // The water is unlit, so it does not dim with the lights at dusk the way
   // every lit surface does. It is darkened by this much instead.
-  duskLight: 0.42,
+  duskLight: 0.6,
   glint: 0.22,
 } as const
 

@@ -26,6 +26,7 @@ import { Traffic } from './Traffic'
 import { AmbientClock } from './ambient'
 import { Pond } from './Pond'
 import { Birds } from './Birds'
+import { Sky } from './Sky'
 
 // Holds the reveal back until a few frames have actually rendered, so shaders
 // are compiled and the first frame the visitor sees is never a stutter.
@@ -142,6 +143,7 @@ export function Estate() {
           <Suspense fallback={null}>
             <AmbientClock />
             <Lighting />
+            <Sky />
             <Ground />
             <Road />
             <Props />

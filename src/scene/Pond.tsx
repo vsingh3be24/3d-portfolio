@@ -5,7 +5,7 @@ import { Reflector } from 'three/examples/jsm/objects/Reflector.js'
 import { ambientTime } from './ambient'
 import { AMBIENT, PARK, WATER } from './constants'
 import { isLowTier } from './deviceTier'
-import { colourLevel, trackColour } from './dusk'
+import { duskLevel, trackColour } from './dusk'
 
 const f = (value: number) => value.toFixed(4)
 
@@ -100,7 +100,7 @@ export function Pond() {
     // they sit beyond what the pond can mirror, and they are most of the cost.
     const render = mirror.onBeforeRender
     mirror.onBeforeRender = (renderer: WebGLRenderer, scene: Scene, camera: Camera, ...rest) => {
-      uniforms.uLight.value = 1 - (1 - WATER.duskLight) * colourLevel()
+      uniforms.uLight.value = 1 - (1 - WATER.duskLight) * duskLevel()
       mirror.getReflectionCamera(camera).layers.set(AMBIENT.reflectLayer)
       render.call(mirror, renderer, scene, camera, ...rest)
     }

@@ -14,7 +14,7 @@ import {
 import { usePrefersReducedMotion } from '@/hooks/usePrefersReducedMotion'
 import { ambientTime } from './ambient'
 import { AMBIENT, BIRDS } from './constants'
-import { colourLevel } from './dusk'
+import { duskLevel } from './dusk'
 
 const COUNT = BIRDS.groups.length * BIRDS.perGroup
 
@@ -106,7 +106,7 @@ export function Birds() {
   useFrame(() => {
     const mesh = meshRef.current
     if (!mesh) return
-    const leave = colourLevel()
+    const leave = duskLevel()
     mesh.visible = !prefersReducedMotion && leave < 0.999
     if (!mesh.visible) return
     const time = ambientTime.value

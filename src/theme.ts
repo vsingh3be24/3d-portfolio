@@ -5,7 +5,10 @@
 // re-skinning the site for a second instance.
 
 export type Palette = {
-  // The void the slab floats in.
+  // The sky around the estate: overhead, at the horizon, and the void below
+  // the slab, which is most of what the camera sees around the model.
+  skyZenith: string
+  skyHorizon: string
   groundFar: string
   // The model itself.
   slabTop: string
@@ -57,7 +60,12 @@ export type Palette = {
 // friendlier in a five-second scan and is legible before the visitor has
 // touched anything.
 const day: Palette = {
-  groundFar: '#dfe6dd',
+  // A clear sky overhead, a bright haze at the horizon, and a soft blue below
+  // the slab for the estate to float in. Shown exactly: the sky is not tone
+  // mapped.
+  skyZenith: '#8ab8dc',
+  skyHorizon: '#e6eef0',
+  groundFar: '#bfd5e1',
   slabTop: '#b9cf9e',
   slabEdge: '#a08767',
   road: '#7b8189',
@@ -101,7 +109,9 @@ const day: Palette = {
 // that glows keeps its value while the surfaces around it fall away.
 const dusk: Palette = {
   ...day,
-  groundFar: '#1a2130',
+  skyZenith: '#101a2e',
+  skyHorizon: '#2e2b47',
+  groundFar: '#141b2b',
   slabTop: '#3e5545',
   slabEdge: '#2b2620',
   road: '#333a44',

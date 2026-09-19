@@ -54,10 +54,16 @@ export function trackTint(colour: Color, token: PaletteToken): void {
   track({ colour, day: new Color(1, 1, 1), dusk: ratio })
 }
 
-// How far colours have gone towards dusk, for anything that has to follow
-// them without being a tracked colour itself.
+// How far the surface colours have gone towards dusk. Capped below 1 by
+// design: surfaces only travel part of the way, since dimmed lights do the rest.
 export function colourLevel(): number {
   return appliedLevel
+}
+
+// How far the sky has gone from day to dusk: the whole way, 0 to 1. For
+// anything that follows the time of day rather than the surface palette.
+export function duskLevel(): number {
+  return stage(0, DUSK.colourEnd)
 }
 
 export function applyColours(level: number): void {
