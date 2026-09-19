@@ -109,9 +109,10 @@ const day: Palette = {
 // that glows keeps its value while the surfaces around it fall away.
 const dusk: Palette = {
   ...day,
-  skyZenith: '#101a2e',
-  skyHorizon: '#2e2b47',
-  groundFar: '#141b2b',
+  // Night stays one even navy, top to bottom.
+  skyZenith: '#1a2130',
+  skyHorizon: '#1a2130',
+  groundFar: '#1a2130',
   slabTop: '#3e5545',
   slabEdge: '#2b2620',
   road: '#333a44',
