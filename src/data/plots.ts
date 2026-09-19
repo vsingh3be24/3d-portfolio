@@ -492,7 +492,7 @@ const definitions: PlotDefinition[] = [
         'Problem solving, and a few wins along the way.',
         [
           '140+ data structures and algorithms problems solved on LeetCode, a 1540 contest rating, and an 8.82 CGPA.',
-          'In 2026, semifinalist in the Flipkart GRID 8.0 Software Development Challenge and Best Speaker at the Model United Nations Society. Before that: gold at the Inter-University Girls\' Badminton at PEC Chandigarh, 2nd prize at the Thapar Quizzing Club GK Quiz, and 3rd prize at Construct, Thapar Civil Society.',
+          'In 2026, semifinalist in the Flipkart GRID 8.0 Software Development Challenge and Best Speaker at the Model United Nations Society. Before that: 2nd prize at the Thapar Quizzing Club GK Quiz and 3rd prize at Construct, Thapar Civil Society.',
         ],
         profile.stats.map((stat) => `${stat.value}|${stat.label}`),
       ),
