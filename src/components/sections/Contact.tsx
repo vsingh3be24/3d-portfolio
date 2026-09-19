@@ -1,42 +1,50 @@
 import { Reveal, RevealOnScroll } from '@/components/motion/Reveal'
+import { Section } from '@/components/layout/Section'
+import { nudge, pill } from '@/components/ui/styles'
 import { profile } from '@/data/profile'
 import { site } from '@/data/site'
 
 export function Contact() {
   return (
-    <section id="contact" className="mx-auto max-w-3xl px-6 py-24 sm:px-10 lg:px-0">
+    <Section id="contact" number={5} label={site.sections.contact.label} title={site.sections.contact.title}>
       <RevealOnScroll>
         <Reveal>
-          <h2 className="font-display text-step-4 text-ink">Contact</h2>
+          <p className="max-w-[48ch] font-body text-step-2 leading-relaxed text-ink/75">{site.contactLine}</p>
         </Reveal>
+        {/* The address itself, set large, with an underline that draws across on hover. */}
         <Reveal>
-          <p className="mt-6 max-w-prose font-body text-step-2 leading-relaxed text-ink/80">{site.contactLine}</p>
-        </Reveal>
-        <Reveal className="mt-8 flex flex-wrap gap-3">
           <a
             href={`mailto:${profile.email}`}
-            className="border border-ink bg-ink px-5 py-2.5 font-body text-step-0 text-paper transition-opacity hover:opacity-85"
+            className="group mt-6 inline-flex max-w-full items-center gap-3 font-display text-step-4 font-semibold tracking-[-0.02em] text-ink"
           >
-            {profile.email}
-          </a>
-          <a
-            href={profile.github}
-            target="_blank"
-            rel="noreferrer"
-            className="border border-ink px-5 py-2.5 font-body text-step-0 text-ink transition-colors hover:bg-ink hover:text-paper"
-          >
-            GitHub
-          </a>
-          <a
-            href={profile.linkedin}
-            target="_blank"
-            rel="noreferrer"
-            className="border border-ink px-5 py-2.5 font-body text-step-0 text-ink transition-colors hover:bg-ink hover:text-paper"
-          >
-            LinkedIn
+            <span className="relative break-all">
+              {profile.email}
+              <span
+                aria-hidden
+                className="absolute -bottom-1 left-0 h-[3px] w-full origin-left scale-x-0 rounded-full bg-accent transition-transform duration-300 ease-out group-hover:scale-x-100"
+              />
+            </span>
+            <span aria-hidden className="text-accent transition-transform duration-300 group-hover:translate-x-1">
+              →
+            </span>
           </a>
         </Reveal>
+        <Reveal className="mt-8 flex flex-wrap gap-3">
+          {[
+            { label: 'GitHub', href: profile.github },
+            { label: 'LinkedIn', href: profile.linkedin },
+            { label: 'LeetCode', href: profile.leetcode },
+            { label: site.resumeLabel, href: profile.resume },
+          ].map((link) => (
+            <a key={link.label} href={link.href} target="_blank" rel="noreferrer" className={pill.secondary}>
+              {link.label}
+              <span aria-hidden className={nudge}>
+                ↗
+              </span>
+            </a>
+          ))}
+        </Reveal>
       </RevealOnScroll>
-    </section>
+    </Section>
   )
 }

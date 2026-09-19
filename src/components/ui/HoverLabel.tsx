@@ -32,9 +32,12 @@ export function HoverLabel({ container }: { container: HTMLElement | null }) {
     <div
       ref={labelRef}
       aria-hidden
-      className="pointer-events-none absolute left-0 top-0 max-w-[22ch] border border-ink/15 bg-paper/95 px-3 py-2"
+      className="pointer-events-none absolute left-0 top-0 max-w-[24ch] rounded-xl border border-ink/10 bg-paper/90 px-3.5 py-2.5 shadow-[0_14px_30px_-16px_rgb(var(--ui-ink)/0.45)] backdrop-blur-[12px]"
     >
-      <div className="font-body text-step-0 font-medium text-ink">{plot.title}</div>
+      <div className="flex items-center gap-2 font-body text-step-1 font-semibold text-ink">
+        <span aria-hidden className="h-1.5 w-1.5 rounded-full bg-accent" />
+        {plot.title}
+      </div>
       <div className="mt-0.5 font-body text-step-0 leading-tight text-ink/60">{plot.tagline}</div>
     </div>
   )

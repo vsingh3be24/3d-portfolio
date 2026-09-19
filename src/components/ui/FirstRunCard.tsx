@@ -58,7 +58,7 @@ export function FirstRunCard() {
   return (
     <div
       role="note"
-      className="pointer-events-auto absolute inset-x-3 top-20 z-[36] mx-auto flex max-w-[300px] items-start gap-3 border border-ink/15 bg-paper/95 p-4 transition-opacity ease-out sm:top-5"
+      className="pointer-events-auto absolute inset-x-3 top-20 z-[36] mx-auto flex max-w-[320px] items-start gap-3 rounded-2xl border border-ink/10 bg-paper/90 p-4 shadow-[0_18px_40px_-20px_rgb(var(--ui-ink)/0.45)] backdrop-blur-[12px] transition-opacity ease-out sm:top-5"
       style={{
         opacity: visible ? 1 : 0,
         transitionDuration: prefersReducedMotion ? '0ms' : `${UI.panelTransitionMs}ms`,
@@ -72,7 +72,7 @@ export function FirstRunCard() {
       <button
         type="button"
         onClick={dismiss}
-        className="min-h-11 shrink-0 border border-ink/20 px-3 font-body text-step-0 text-ink hover:border-ink/50"
+        className="min-h-10 shrink-0 rounded-full bg-ink px-4 font-body text-step-0 font-medium text-paper transition-opacity hover:opacity-85"
       >
         {site.orientationDismiss}
       </button>

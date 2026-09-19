@@ -1,7 +1,40 @@
+import { motion } from "framer-motion";
 import { CountUp } from "@/components/motion/CountUp";
+import { Reveal, RevealGroup } from "@/components/motion/Reveal";
 import { PlotIndex } from "@/components/ui/PlotIndex";
+import { nudge, pill } from "@/components/ui/styles";
 import { profile } from "@/data/profile";
+import { site } from "@/data/site";
 import { useEstate } from "@/store/useEstate";
+
+const EASE = [0.22, 1, 0.36, 1] as const;
+
+// Each word of the name rises into place from behind a mask, one after
+// another. The mask carries extra room below the baseline so descenders are
+// never clipped, and gives it back with a negative margin so line spacing is
+// untouched.
+function RisingName({ name }: { name: string }) {
+  return (
+    <>
+      {name.split(" ").map((word, index) => (
+        <span key={word + index}>
+          {/* A real space between the masks, so the name still wraps. */}
+          {index > 0 && " "}
+          <span className="-mb-[0.14em] inline-block overflow-hidden pb-[0.14em] align-bottom">
+            <motion.span
+              className="inline-block"
+              initial={{ y: "110%" }}
+              animate={{ y: 0 }}
+              transition={{ duration: 0.9, delay: 0.1 + index * 0.09, ease: EASE }}
+            >
+              {word}
+            </motion.span>
+          </span>
+        </span>
+      ))}
+    </>
+  );
+}
 
 // The left half of the hero: who, how to reach them, three numbers, then the
 // way into the estate. Inside a room the list at the bottom becomes that
@@ -15,67 +48,79 @@ export function IntroColumn() {
     // taller than the screen, this starts at the top and scrolls, instead of
     // spilling off both ends where the name could never be scrolled back to.
     <div className="flex h-full flex-col overflow-y-auto px-6 py-10 sm:px-10 lg:py-8 xl:px-16">
-      <div className="my-auto">
-        <h1 className="max-w-[14ch] font-display text-step-5 leading-[0.95] tracking-tight text-ink lg:text-step-6 lg:[@media(max-height:860px)]:text-step-5">
-          {profile.name}
+      <RevealGroup className="my-auto">
+        <Reveal>
+          <p className="inline-flex items-center gap-2 rounded-full border border-ink/10 bg-ink/[0.03] py-1 pl-2.5 pr-3.5 font-body text-step-0 text-ink/75">
+            <span aria-hidden className="relative flex h-2 w-2">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-accent opacity-60 motion-reduce:animate-none" />
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-accent" />
+            </span>
+            {site.availability}
+          </p>
+        </Reveal>
+
+        <h1 className="mt-4 max-w-[14ch] font-display text-step-5 font-semibold leading-[0.95] tracking-[-0.03em] text-ink lg:text-[76px] lg:[@media(max-height:860px)]:text-step-5">
+          <RisingName name={profile.name} />
         </h1>
 
-        <div className="mt-5 h-px w-16 bg-ink" />
+        <Reveal>
+          <div className="mt-5 h-[3px] w-14 rounded-full bg-accent" />
+        </Reveal>
 
-        <p className="mt-5 max-w-[38ch] font-body text-step-2 leading-relaxed text-ink/80">
-          {profile.role}, {profile.place}. {profile.batch}.
-        </p>
+        <Reveal>
+          <p className="mt-4 max-w-[38ch] font-body text-step-2 leading-relaxed text-ink/80">
+            {profile.role}, {profile.place}. {profile.batch}.
+          </p>
+        </Reveal>
 
         {atCampus && profile.pitch && (
-          <p className="mt-4 max-w-[38ch] font-body text-step-1 leading-relaxed text-ink/70">
-            {profile.pitch}
-          </p>
+          <Reveal>
+            <p className="mt-3 max-w-[40ch] font-body text-step-1 leading-relaxed text-ink/65">
+              {profile.pitch}
+            </p>
+          </Reveal>
         )}
 
-        <div className="mt-6 flex flex-wrap gap-3">
-          <a
-            href={`mailto:${profile.email}`}
-            className="border border-ink bg-ink px-5 py-2.5 font-body text-step-0 text-paper"
-          >
+        <Reveal className="mt-6 flex flex-wrap gap-2.5">
+          <a href={`mailto:${profile.email}`} className={pill.primary}>
             Email
+            <span aria-hidden className={nudge}>
+              →
+            </span>
           </a>
-          <a
-            href={profile.github}
-            target="_blank"
-            rel="noreferrer"
-            className="border border-ink px-5 py-2.5 font-body text-step-0 text-ink"
-          >
+          <a href={profile.github} target="_blank" rel="noreferrer" className={pill.secondary}>
             GitHub
+            <span aria-hidden className={nudge}>
+              ↗
+            </span>
           </a>
-          <a
-            href={profile.resume}
-            target="_blank"
-            rel="noreferrer"
-            className="border border-ink px-5 py-2.5 font-body text-step-0 text-ink"
-          >
+          <a href={profile.resume} target="_blank" rel="noreferrer" className={pill.secondary}>
             CV
+            <span aria-hidden className={nudge}>
+              ↗
+            </span>
           </a>
-        </div>
+        </Reveal>
 
         {atCampus && (
-          <div className="mt-8 flex flex-wrap gap-x-8 gap-y-4">
+          <Reveal className="mt-7 flex flex-wrap gap-x-8 gap-y-4">
             {profile.stats.map((stat) => (
               <div key={stat.label}>
-                <div className="font-display text-step-4 text-ink">
+                <div className="font-display text-step-4 font-semibold leading-none tracking-[-0.02em] text-ink">
                   <CountUp value={stat.value} />
                 </div>
-                <div className="mt-1 max-w-[14ch] font-body text-step-0 leading-tight text-ink/60">
+                <div className="mt-1.5 max-w-[14ch] font-body text-step-0 leading-tight text-ink/55">
                   {stat.label}
                 </div>
               </div>
             ))}
-          </div>
+          </Reveal>
         )}
 
         <div className="mt-6">
           <PlotIndex />
         </div>
-      </div>
+      </RevealGroup>
     </div>
   );
 }

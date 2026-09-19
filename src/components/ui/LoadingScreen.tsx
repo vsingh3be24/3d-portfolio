@@ -4,7 +4,7 @@ import { usePrefersReducedMotion } from '@/hooks/usePrefersReducedMotion'
 import { LOADING, UI } from '@/scene/constants'
 import { stageProgress, subscribeStages } from '@/scene/loading'
 import { useEstate } from '@/store/useEstate'
-import { themes } from '@/theme'
+import { ACCENT, themes } from '@/theme'
 
 // The number on screen. Kept outside the component because the screen is
 // shown by two owners in turn — the Suspense fallback while the scene's code
@@ -70,8 +70,15 @@ export function LoadingScreen({ progress, leaving = false }: { progress: number;
         transitionDuration: prefersReducedMotion ? '0ms' : `${UI.revealDurationMs}ms`,
       }}
     >
-      <p className="font-body text-step-0 opacity-60">{site.loadingLine}</p>
-      <p className="font-display text-step-4 tabular-nums leading-none">{figure}%</p>
+      <p className="font-body text-step-0 uppercase tracking-[0.16em] opacity-60">{site.loadingLine}</p>
+      <p className="font-display text-step-5 font-semibold tabular-nums leading-none tracking-[-0.02em]">{figure}%</p>
+      {/* A thin bar that fills with the counter. */}
+      <div aria-hidden className="mt-2 h-[3px] w-40 overflow-hidden rounded-full" style={{ backgroundColor: `${ink}22` }}>
+        <div
+          className="h-full rounded-full transition-[width] duration-200 ease-out"
+          style={{ width: `${figure}%`, backgroundColor: ACCENT }}
+        />
+      </div>
     </div>
   )
 }

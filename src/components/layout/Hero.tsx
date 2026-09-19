@@ -3,6 +3,7 @@ import { ControlsHint, Location } from '@/components/ui/Meta'
 import { PlotPanel } from '@/components/ui/PlotPanel'
 import { SceneControls } from '@/components/ui/SceneControls'
 import { TabBar } from '@/components/ui/TabBar'
+import { site } from '@/data/site'
 import { useEstate } from '@/store/useEstate'
 import { IntroColumn } from './IntroColumn'
 import { SceneColumn } from './SceneColumn'
@@ -13,6 +14,7 @@ import { SceneColumn } from './SceneColumn'
 // pointer except on its own controls, so the canvas stays draggable between.
 function SceneOverlay() {
   const exhibitOpen = useEstate((state) => state.level === 'exhibit')
+  const atCampus = useEstate((state) => state.level === 'campus')
   // With an exhibit open the panel covers the right of the scene on desktop,
   // so the controls and bottom row step left beside it; on a phone it is a
   // sheet over the whole scene, and the bottom row steps out of its way.
@@ -30,7 +32,20 @@ function SceneOverlay() {
         <div
           className={`grid grid-cols-1 items-end gap-2 transition-[margin] duration-300 ${exhibitOpen ? 'lg:grid-cols-1' : ''} sm:grid-cols-[1fr_auto_1fr] ${besidePanel} ${underSheet}`}
         >
-          <div className="max-sm:hidden" />
+          <div className="flex max-sm:hidden">
+            {atCampus && (
+              <button
+                type="button"
+                onClick={() => document.getElementById("about")?.scrollIntoView({ behavior: "smooth" })}
+                className="pointer-events-auto group inline-flex items-center gap-2 rounded-full border border-ink/10 bg-paper/70 px-3.5 py-2 font-body text-step-0 text-ink/70 backdrop-blur-[12px] transition-colors hover:border-ink/30 hover:text-ink"
+              >
+                <span aria-hidden className="inline-block motion-safe:animate-bounce">
+                  ↓
+                </span>
+                {site.scrollCue}
+              </button>
+            )}
+          </div>
           <div className="flex min-w-0 flex-col items-center gap-1.5">
             <TabBar />
             {/* Beside an open panel there is room for the tab bar alone. */}

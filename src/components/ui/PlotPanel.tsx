@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { CountUp } from '@/components/motion/CountUp'
 import { Reveal, RevealGroup } from '@/components/motion/Reveal'
+import { chip, eyebrow, nudge, pill } from '@/components/ui/styles'
 import { OVERVIEW_ID, plots, type Exhibit, type Plot, type PlotOverview } from '@/data/plots'
 import { site } from '@/data/site'
 import { usePrefersReducedMotion } from '@/hooks/usePrefersReducedMotion'
@@ -32,10 +33,10 @@ function Links({ plot }: { plot: Plot }) {
           href={link.href}
           target={link.href.startsWith('http') ? '_blank' : undefined}
           rel={link.href.startsWith('http') ? 'noreferrer' : undefined}
-          className="group inline-flex items-center gap-2 border border-ink px-4 py-2 font-body text-step-0 text-ink transition-colors hover:bg-ink hover:text-paper"
+          className={pill.secondary}
         >
           {link.label}
-          <span aria-hidden className="transition-transform duration-200 group-hover:translate-x-0.5">
+          <span aria-hidden className={nudge}>
             ↗
           </span>
         </a>
@@ -48,10 +49,10 @@ function Stack({ plot }: { plot: Plot }) {
   if (plot.stack.length === 0) return null
   return (
     <Reveal className="mt-8">
-      <h4 className="font-body text-step-0 font-medium uppercase tracking-wide text-ink/50">{site.builtWith}</h4>
+      <h4 className={eyebrow}>{site.builtWith}</h4>
       <ul className="mt-3 flex flex-wrap gap-2">
         {plot.stack.map((tool) => (
-          <li key={tool} className="border border-ink/20 px-2.5 py-1 font-body text-step-0 text-ink/80">
+          <li key={tool} className={chip}>
             {tool}
           </li>
         ))}
@@ -76,7 +77,7 @@ function OverviewBody({ plot, overview }: { plot: Plot; overview: PlotOverview }
           <Reveal key={fact.label}>
             <dt className="sr-only">{fact.label}</dt>
             <dd>
-              <div className="font-display text-step-4 leading-none text-accent">
+              <div className="font-display text-step-4 font-semibold leading-none tracking-[-0.02em] text-accent">
                 <CountUp value={fact.value} />
               </div>
               <div className="mt-1.5 max-w-[24ch] font-body text-step-0 leading-snug text-ink/60">{fact.label}</div>
@@ -88,7 +89,7 @@ function OverviewBody({ plot, overview }: { plot: Plot; overview: PlotOverview }
       {overview.sections.map((section) => (
         <section key={section.title} className="mt-8 max-w-[62ch]">
           <Reveal>
-            <h4 className="font-display text-step-2 text-ink">{section.title}</h4>
+            <h4 className="font-display text-step-2 font-semibold tracking-[-0.01em] text-ink">{section.title}</h4>
           </Reveal>
           <div className="mt-2 flex flex-col gap-3">
             {section.body.map((paragraph, index) => (
@@ -209,7 +210,7 @@ export function PlotPanel() {
             <h3
               ref={headingRef}
               tabIndex={-1}
-              className="mt-1 max-w-[18ch] font-display text-step-4 leading-tight text-ink outline-none"
+              className="mt-1 max-w-[18ch] font-display text-step-4 font-semibold leading-tight tracking-[-0.02em] text-ink outline-none"
             >
               {title}
             </h3>
