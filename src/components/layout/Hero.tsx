@@ -34,15 +34,18 @@ function SceneOverlay() {
         >
           <div className="flex max-sm:hidden">
             {atCampus && (
+              // Just the arrow: the corner narrows as the tab bar grows, and a
+              // round button fits however many buildings the estate has.
               <button
                 type="button"
                 onClick={() => document.getElementById("about")?.scrollIntoView({ behavior: "smooth" })}
-                className="pointer-events-auto group inline-flex items-center gap-2 rounded-full border border-ink/10 bg-paper/70 px-3.5 py-2 font-body text-step-0 text-ink/70 backdrop-blur-[12px] transition-colors hover:border-ink/30 hover:text-ink"
+                aria-label={site.scrollCue}
+                title={site.scrollCue}
+                className="pointer-events-auto flex h-11 w-11 items-center justify-center rounded-full border border-ink/10 bg-paper/70 font-body text-step-1 text-ink/70 backdrop-blur-[12px] transition-colors hover:border-ink/30 hover:text-ink"
               >
                 <span aria-hidden className="inline-block motion-safe:animate-bounce">
                   ↓
                 </span>
-                {site.scrollCue}
               </button>
             )}
           </div>
