@@ -11,7 +11,9 @@ export const profile = {
     "I build custom front-end and back-end applications with Java, the MERN stack, Python and Flask, and SQL, and most of them are internal tools that automate a business process. I enjoy translating business requirements into technical solutions, and the work that makes them dependable: RESTful APIs, database design, third-party integrations, testing and troubleshooting.",
   ],
   email: "vsingh3_be24@thapar.edu",
-  github: "https://github.com/vaishnavi-singh",
+  // Her resume lists github.com/vaishnavi-singh, which is a different, empty
+  // account; this is the one with her projects.
+  github: "https://github.com/vsingh3be24",
   linkedin: "https://linkedin.com/in/vaishnavi-singh",
   leetcode: "https://leetcode.com/u/vaishnavi-singh",
   // Served from public/. Linked from the destination list as "My resume".
