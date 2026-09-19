@@ -10,7 +10,7 @@ export const profile = {
     "I'm a Computer Engineering undergraduate at Thapar Institute of Engineering and Technology, graduating in 2028, with an 8.82 CGPA and a strong base in data structures and algorithms: 140+ LeetCode problems and a 1540 contest rating.",
     "I build custom front-end and back-end applications with Java, the MERN stack, Python and Flask, and SQL, and most of them are internal tools that automate a business process. I enjoy translating business requirements into technical solutions, and the work that makes them dependable: RESTful APIs, database design, third-party integrations, testing and troubleshooting.",
   ],
-  email: "vsingh3_be24@thapar.edu",
+  email: "vaishnavixthapar@gmail.com",
   // Her resume lists github.com/vaishnavi-singh, which is a different, empty
   // account; this is the one with her projects.
   github: "https://github.com/vsingh3be24",
@@ -59,10 +59,10 @@ export const profile = {
   timeline: [
     { year: "2024", label: "95.24 percentile in JEE Mains" },
     { year: "Aug 2024", label: "Started B.Tech at Thapar Institute" },
-    { year: "Sep 2024", label: "Alumni cell coordinator and MLSC web team" },
+    { year: "Sep 2024", label: "Alumni cell coordinator and FAPS web team" },
+    { year: "2024", label: "Best Speaker, Model United Nations Society" },
     { year: "Aug 2025", label: "Student Placement Representative and Proctor, Vahini Hall" },
     { year: "2026", label: "Semifinalist, Flipkart GRID 8.0 Software Development Challenge" },
-    { year: "2026", label: "Best Speaker, Model United Nations Society" },
   ],
   stats: [
     { label: "LeetCode problems solved", value: "140+" },
