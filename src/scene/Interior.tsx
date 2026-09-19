@@ -356,9 +356,22 @@ function buildExhibits(plot: Plot): BuiltExhibit[] {
   })
 }
 
-function ExhibitMesh({ built }: { built: BuiltExhibit }) {
+// Lands, bounces twice, settles: the drop an exhibit makes into its room.
+function bounce(t: number): number {
+  const n = 7.5625
+  const d = 2.75
+  if (t < 1 / d) return n * t * t
+  if (t < 2 / d) return n * (t -= 1.5 / d) * t + 0.75
+  if (t < 2.5 / d) return n * (t -= 2.25 / d) * t + 0.9375
+  return n * (t -= 2.625 / d) * t + 0.984375
+}
+
+function ExhibitMesh({ built, order }: { built: BuiltExhibit; order: number }) {
   const groupRef = useRef<Group>(null)
   const level = useRef(0)
+  // Seconds since the room appeared, and whether this exhibit has landed.
+  const born = useRef<number | null>(null)
+  const landed = useRef(false)
   const releaseTimer = useRef<number | null>(null)
   const prefersReducedMotion = usePrefersReducedMotion()
   const setHoveredExhibit = useEstate((state) => state.setHoveredExhibit)
@@ -377,18 +390,35 @@ function ExhibitMesh({ built }: { built: BuiltExhibit }) {
 
   // Read from the store directly rather than subscribing, so hover never
   // re-renders the room — the response is entirely per-frame.
-  useFrame((_, delta) => {
+  useFrame((state, delta) => {
     const group = groupRef.current
     if (!group) return
+
+    // The drop in: real time rather than the ambient clock, since it answers
+    // the visitor stepping inside and runs even while motion is paused.
+    let drop = 0
+    if (!landed.current) {
+      if (born.current === null) born.current = state.clock.elapsedTime
+      const start = ROOM.entranceDelay + order * ROOM.entranceStagger
+      const t = prefersReducedMotion ? 1 : (state.clock.elapsedTime - born.current - start) / ROOM.entranceDuration
+      if (t >= 1) {
+        landed.current = true
+        // Its shadow was drawn with it in the air; redraw it where it stands.
+        requestShadowUpdate()
+      } else {
+        drop = ROOM.entranceDrop * (1 - bounce(Math.max(t, 0)))
+      }
+    }
+
     const { hoveredExhibitId, activeExhibitId } = useEstate.getState()
     const target = hoveredExhibitId === id || activeExhibitId === id ? 1 : 0
-    if (Math.abs(target - level.current) < 0.0005) return
+    if (landed.current && Math.abs(target - level.current) < 0.0005 && group.position.y === ROOM.exhibitLift * level.current) return
 
     const blend = prefersReducedMotion ? 1 : 1 - Math.pow(ROOM.hoverDecay, Math.min(delta, 0.05))
     level.current += (target - level.current) * blend
     // No shadow redraw for this: a lift this small moves no shadow anyone can
     // see, and redrawing the map would put the room over its draw budget.
-    group.position.y = ROOM.exhibitLift * level.current
+    group.position.y = ROOM.exhibitLift * level.current + drop
     built.rim.value = ROOM.rimStrength * level.current
   })
 
@@ -464,8 +494,8 @@ function Room({ plot }: { plot: Plot }) {
           if (useEstate.getState().activeExhibitId) backToInterior()
         }}
       />
-      {built.exhibits.map((exhibit) => (
-        <ExhibitMesh key={exhibit.exhibit.id} built={exhibit} />
+      {built.exhibits.map((exhibit, order) => (
+        <ExhibitMesh key={exhibit.exhibit.id} built={exhibit} order={order} />
       ))}
     </group>
   )

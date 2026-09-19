@@ -1,3 +1,4 @@
+import { CountUp } from "@/components/motion/CountUp";
 import { PlotIndex } from "@/components/ui/PlotIndex";
 import { profile } from "@/data/profile";
 import { useEstate } from "@/store/useEstate";
@@ -61,7 +62,7 @@ export function IntroColumn() {
             {profile.stats.map((stat) => (
               <div key={stat.label}>
                 <div className="font-display text-step-4 text-ink">
-                  {stat.value}
+                  <CountUp value={stat.value} />
                 </div>
                 <div className="mt-1 max-w-[14ch] font-body text-step-0 leading-tight text-ink/60">
                   {stat.label}

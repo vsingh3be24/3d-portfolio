@@ -665,6 +665,13 @@ export const UI = {
   // The detail panel slides in from the right on desktop, up from the bottom
   // on mobile. Short enough to feel attached to the camera flight it follows.
   panelTransitionMs: 260,
+  // Content that arrives staggers in: each piece fades up this long after the
+  // one before, starting once the panel has mostly slid into place.
+  revealStagger: 0.055,
+  revealDelay: 0.14,
+  revealRise: 10,
+  // Numbers count up from zero over this long when they first appear.
+  countUpMs: 1100,
 } as const
 
 // The loading screen and the first-run card.
@@ -742,6 +749,13 @@ export const ROOM = {
   // Hover: lift in canonical room units, and how fast it settles.
   exhibitLift: 0.08,
   hoverDecay: 0.0004,
+  // On entering, the exhibits drop into place one after another, as the
+  // camera arrives: seconds before the first, between each, and per drop,
+  // and the height each falls from, in room units.
+  entranceDelay: 0.3,
+  entranceStagger: 0.16,
+  entranceDuration: 0.75,
+  entranceDrop: 0.9,
   rimStrength: 0.55,
   rimPower: 1.6,
   hoverReleaseMs: 60,

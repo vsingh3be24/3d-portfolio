@@ -1,4 +1,4 @@
-import { plots } from '@/data/plots'
+import { OVERVIEW_ID, plots } from '@/data/plots'
 import { useEstate } from '@/store/useEstate'
 
 // Each level has an address, so a single project can be linked to from an
@@ -14,6 +14,7 @@ function parse(hash: string): Route {
   const [plotPart, exhibitPart] = hash.replace(/^#\/?/, '').split('/').filter(Boolean)
   const plot = plots.find((entry) => entry.id === plotPart && entry.exhibits.length > 0)
   if (!plot) return { plotId: null, exhibitId: null }
+  if (exhibitPart === OVERVIEW_ID && plot.overview) return { plotId: plot.id, exhibitId: OVERVIEW_ID }
   const exhibit = plot.exhibits.find((entry) => entry.id === exhibitPart)
   return { plotId: plot.id, exhibitId: exhibit?.id ?? null }
 }

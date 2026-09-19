@@ -29,6 +29,18 @@ function exhibit(
   return { id, name, object, claim, body, labels }
 }
 
+// A project's full story, opened from the first entry in its room: what it
+// is, a few numbers worth knowing, how it works, and what it trades away.
+export type PlotOverview = {
+  intro: string[]
+  // Shown large, and counted up when the panel opens: "87.8%", "0.55", "~120".
+  facts: { value: string; label: string }[]
+  sections: { title: string; body: string[] }[]
+}
+
+// The id the overview answers to in the address, beside the exhibits' own.
+export const OVERVIEW_ID = 'overview'
+
 export type Plot = {
   id: string
   plotNumber: string
@@ -62,6 +74,7 @@ export type Plot = {
   // Three per room. A room has two wall zones, each taking one wall or floor
   // object, and two places on the desk.
   exhibits: Exhibit[]
+  overview?: PlotOverview
 }
 
 // Placement is derived, not hand-written: every plot on the ring is spaced
