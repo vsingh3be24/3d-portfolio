@@ -10,8 +10,11 @@ export type Palette = {
   skyZenith: string
   skyHorizon: string
   groundFar: string
-  // Clouds below the estate, and chimney smoke.
+  // Chimney smoke.
   cloud: string
+  // Clouds painted into the sky: their lit tops and shaded undersides.
+  skyCloud: string
+  skyCloudShade: string
   // The model itself.
   slabTop: string
   slabEdge: string
@@ -69,6 +72,8 @@ const day: Palette = {
   skyHorizon: '#e6eef0',
   groundFar: '#bfd5e1',
   cloud: '#f7f9fa',
+  skyCloud: '#ffffff',
+  skyCloudShade: '#e7eef4',
   slabTop: '#b9cf9e',
   slabEdge: '#a08767',
   road: '#7b8189',
@@ -117,6 +122,8 @@ const dusk: Palette = {
   skyHorizon: '#1a2130',
   groundFar: '#1a2130',
   cloud: '#5b6478',
+  skyCloud: '#262e40',
+  skyCloudShade: '#1f2636',
   slabTop: '#3e5545',
   slabEdge: '#2b2620',
   road: '#333a44',

@@ -82,6 +82,11 @@ const matrix = new Matrix4()
 const turn = new Quaternion()
 const bankRoll = new Quaternion()
 const scale = new Vector3(1, 1, 1)
+
+function smoothstep(from: number, to: number, value: number): number {
+  const t = Math.min(Math.max((value - from) / (to - from), 0), 1)
+  return t * t * (3 - 2 * t)
+}
 const ZAXIS = new Vector3(0, 0, 1)
 const UP = new Vector3(0, 1, 0)
 const facing = new Matrix4()
@@ -107,8 +112,11 @@ export function Birds() {
     const mesh = meshRef.current
     if (!mesh) return
     const leave = duskLevel()
-    mesh.visible = !prefersReducedMotion && leave < 0.999
-    if (!mesh.visible) return
+    // Birds shrink away as they leave rather than being switched off: a
+    // hidden mesh is skipped when shaders compile behind the loading screen,
+    // so a page opened at dusk would compile the birds on the first day.
+    const size = prefersReducedMotion ? 0 : 1 - smoothstep(0.6, 1, leave)
+    scale.setScalar(size)
     const time = ambientTime.value
     flock.forEach((bird, index) => {
       place(bird, time, leave, here)

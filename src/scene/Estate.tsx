@@ -27,7 +27,6 @@ import { AmbientClock } from './ambient'
 import { Pond } from './Pond'
 import { Birds } from './Birds'
 import { Sky } from './Sky'
-import { Clouds } from './Clouds'
 import { Fountain } from './Fountain'
 import { Walkers } from './Walkers'
 import { Smoke } from './Smoke'
@@ -156,7 +155,6 @@ export function Estate() {
             <Fountain />
             <Walkers />
             <Fireflies />
-            <Clouds />
             <Buildings />
             <GroundLabels />
             <Interiors />

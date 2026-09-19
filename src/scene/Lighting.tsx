@@ -4,7 +4,7 @@ import { Color, type DirectionalLight, type HemisphereLight } from 'three'
 import { usePrefersReducedMotion } from '@/hooks/usePrefersReducedMotion'
 import { useEstate } from '@/store/useEstate'
 import { themes } from '@/theme'
-import { AMBIENT, DUSK, LIGHTING } from './constants'
+import { AMBIENT, DUSK, LIGHTING, SKY } from './constants'
 import { applyColours, dusk, stage } from './dusk'
 import { skyColours } from './Sky'
 import { requestShadowUpdate, takeShadowRequest } from './shadows'
@@ -23,6 +23,10 @@ const ZENITH_DAY = new Color(themes.day.skyZenith)
 const ZENITH_DUSK = new Color(themes.dusk.skyZenith)
 const HORIZON_DAY = new Color(themes.day.skyHorizon)
 const HORIZON_DUSK = new Color(themes.dusk.skyHorizon)
+const CLOUD_DAY = new Color(themes.day.skyCloud)
+const CLOUD_DUSK = new Color(themes.dusk.skyCloud)
+const CLOUD_SHADE_DAY = new Color(themes.day.skyCloudShade)
+const CLOUD_SHADE_DUSK = new Color(themes.dusk.skyCloudShade)
 const SUN_DAY = new Color(LIGHTING.directionalColor)
 const SUN_DUSK = new Color(DUSK.sunColourDusk)
 const HEMI_SKY_DAY = new Color(LIGHTING.hemiSky)
@@ -116,6 +120,9 @@ export function Lighting() {
     skyColours.nadir.value.copy(sky)
     skyColours.zenith.value.lerpColors(ZENITH_DAY, ZENITH_DUSK, colour)
     skyColours.horizon.value.lerpColors(HORIZON_DAY, HORIZON_DUSK, colour)
+    skyColours.cloud.value.lerpColors(CLOUD_DAY, CLOUD_DUSK, colour)
+    skyColours.cloudShade.value.lerpColors(CLOUD_SHADE_DAY, CLOUD_SHADE_DUSK, colour)
+    skyColours.cloudOpacity.value = lerp(SKY.cloudOpacity, SKY.cloudOpacityDusk, colour)
     applyColours(colour * DUSK.surfaceFade)
 
     const light = stage(0, DUSK.lightEnd)

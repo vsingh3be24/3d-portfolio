@@ -3,147 +3,210 @@ import { useFrame } from '@react-three/fiber'
 import {
   BufferAttribute,
   BufferGeometry,
+  CircleGeometry,
   Color,
   CylinderGeometry,
+  DoubleSide,
+  LatheGeometry,
   MeshLambertMaterial,
+  RingGeometry,
   ShaderMaterial,
-  Vector3,
+  Vector2,
 } from 'three'
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
 import { palette } from '@/theme'
-import { ambientTime, pointScale, POINT_SIZE_GLSL } from './ambient'
-import { AMBIENT, FOUNTAIN, PARK, WATER } from './constants'
+import { ambientTime } from './ambient'
+import { AMBIENT, FOUNTAIN, PARK } from './constants'
 import { duskLevel, trackColour } from './dusk'
 
 const f = (value: number) => value.toFixed(4)
+const [CX, CZ] = PARK.pondCentre
 
-// Pedestal, bowl and spout, stacked in the middle of the pond.
+function centred<T extends BufferGeometry>(geometry: T, y = 0): T {
+  geometry.translate(CX, y, CZ)
+  return geometry
+}
+
+// Pedestal, lower bowl, stem, upper bowl and nozzle, stacked in the pond.
 function buildStone(): BufferGeometry {
-  const [cx, cz] = PARK.pondCentre
-  const base = PARK.pondY
-  const pedestal = new CylinderGeometry(FOUNTAIN.pedestalRadius * 0.8, FOUNTAIN.pedestalRadius, FOUNTAIN.pedestalHeight, 12)
-  pedestal.translate(cx, base + FOUNTAIN.pedestalHeight / 2, cz)
-  const bowlY = base + FOUNTAIN.pedestalHeight + FOUNTAIN.bowlHeight / 2
-  const bowl = new CylinderGeometry(FOUNTAIN.bowlRadius, FOUNTAIN.bowlRadius * 0.7, FOUNTAIN.bowlHeight, 16)
-  bowl.translate(cx, bowlY, cz)
-  const spout = new CylinderGeometry(FOUNTAIN.spoutRadius * 0.7, FOUNTAIN.spoutRadius, FOUNTAIN.spoutHeight, 8)
-  spout.translate(cx, bowlY + FOUNTAIN.bowlHeight / 2 + FOUNTAIN.spoutHeight / 2, cz)
-  const stone = mergeGeometries([pedestal, bowl, spout], false)
-  ;[pedestal, bowl, spout].forEach((part) => part.dispose())
+  const { pedestal, lowerBowl, stem, upperBowl, nozzle } = FOUNTAIN
+  const stack = (radiusTop: number, radiusBottom: number, bottom: number, top: number, segments: number) =>
+    centred(new CylinderGeometry(radiusTop, radiusBottom, top - bottom, segments), (top + bottom) / 2)
+  const parts = [
+    stack(pedestal.radiusTop, pedestal.radiusBottom, PARK.pondY, pedestal.top, 16),
+    stack(lowerBowl.radiusTop, lowerBowl.radiusBottom, lowerBowl.bottom, lowerBowl.top, 32),
+    stack(stem.radiusTop, stem.radiusBottom, lowerBowl.top, stem.top, 12),
+    stack(upperBowl.radiusTop, upperBowl.radiusBottom, stem.top, upperBowl.top, 24),
+    stack(nozzle.radius, nozzle.radius * 1.4, upperBowl.top, nozzle.top, 8),
+  ]
+  const stone = mergeGeometries(parts, false)
+  parts.forEach((part) => part.dispose())
   return stone
 }
 
-// Where the water leaves the spout.
-const ORIGIN = new Vector3(
-  PARK.pondCentre[0],
-  PARK.pondY + FOUNTAIN.pedestalHeight + FOUNTAIN.bowlHeight + FOUNTAIN.spoutHeight,
-  PARK.pondCentre[1],
-)
+// The three falls, each a profile spun round the centre. The lathe's v runs
+// along the profile from where the water leaves to where it lands, which is
+// the direction the streaks flow.
+function buildFalls(): BufferGeometry {
+  const sheets = [FOUNTAIN.bell, FOUNTAIN.upperFall, FOUNTAIN.lowerFall].map((profile) =>
+    centred(new LatheGeometry(profile.map(([r, y]) => new Vector2(r, y)), FOUNTAIN.segments)),
+  )
+  const falls = mergeGeometries(sheets, false)
+  sheets.forEach((sheet) => sheet.dispose())
+  return falls
+}
+
+// Still water in each bowl, and a foam ring where each fall lands. aFoam
+// tells the shader which is which.
+function buildSurfaces(): BufferGeometry {
+  const flat = (geometry: BufferGeometry, y: number, foam: number) => {
+    geometry.rotateX(-Math.PI / 2)
+    centred(geometry, y)
+    const surface = geometry.index ? geometry.toNonIndexed() : geometry
+    surface.deleteAttribute('uv')
+    surface.setAttribute('aFoam', new BufferAttribute(new Float32Array(surface.attributes.position.count).fill(foam), 1))
+    return surface
+  }
+  const { lowerBowl, upperBowl } = FOUNTAIN
+  const parts = [
+    flat(new CircleGeometry(lowerBowl.waterRadius, 32), lowerBowl.water, 0),
+    flat(new CircleGeometry(upperBowl.waterRadius, 24), upperBowl.water, 0),
+    // Foam sits a hair above the water it churns, and is drawn after it.
+    ...FOUNTAIN.foam.map(([inner, outer, y]) => flat(new RingGeometry(inner, outer, FOUNTAIN.segments, 1), y + 0.003, 1)),
+  ]
+  const surfaces = mergeGeometries(parts, false)
+  parts.forEach((part) => part.dispose())
+  return surfaces
+}
 
 const stoneMaterial = new MeshLambertMaterial({ color: palette.kerb })
 trackColour(stoneMaterial.color, 'kerb')
 
-// Each droplet is a point on a ballistic arc: launched from the spout on its
-// own heading, pulled down by gravity, gone once it is back under the water.
-// All of it is worked out in the shader from the clock, so the CPU does
-// nothing per frame. Seeds spread the droplets through the cycle.
-function buildSpray(): BufferGeometry {
-  const count = FOUNTAIN.droplets
-  const seed = new Float32Array(count)
-  const heading = new Float32Array(count)
-  const lean = new Float32Array(count)
-  const speed = new Float32Array(count)
-  for (let index = 0; index < count; index += 1) {
-    const k = index / count
-    seed[index] = (k * 7.31) % 1
-    heading[index] = k * Math.PI * 2 * 13.7
-    lean[index] = 0.35 + 0.65 * ((k * 3.17) % 1)
-    speed[index] = 0.85 + 0.25 * ((k * 5.71) % 1)
+const tint = new Color()
+trackColour(tint, 'water')
+// Unlit, so it dims with dusk by hand.
+const light = { value: 1 }
+
+const NOISE_GLSL = /* glsl */ `
+  float hash( vec3 p ) {
+    p = fract( p * 0.3183099 + 0.1 );
+    p *= 17.0;
+    return fract( p.x * p.y * p.z * ( p.x + p.y + p.z ) );
   }
-  const spray = new BufferGeometry()
-  // Positions are unused, but three needs one attribute sized to the count.
-  spray.setAttribute('position', new BufferAttribute(new Float32Array(count * 3), 3))
-  spray.setAttribute('aSeed', new BufferAttribute(seed, 1))
-  spray.setAttribute('aHeading', new BufferAttribute(heading, 1))
-  spray.setAttribute('aLean', new BufferAttribute(lean, 1))
-  spray.setAttribute('aSpeed', new BufferAttribute(speed, 1))
-  return spray
-}
+  float noise( vec3 x ) {
+    vec3 i = floor( x );
+    vec3 f = fract( x );
+    f = f * f * ( 3.0 - 2.0 * f );
+    return mix(
+      mix( mix( hash( i ), hash( i + vec3( 1, 0, 0 ) ), f.x ),
+           mix( hash( i + vec3( 0, 1, 0 ) ), hash( i + vec3( 1, 1, 0 ) ), f.x ), f.y ),
+      mix( mix( hash( i + vec3( 0, 0, 1 ) ), hash( i + vec3( 1, 0, 1 ) ), f.x ),
+           mix( hash( i + vec3( 0, 1, 1 ) ), hash( i + vec3( 1, 1, 1 ) ), f.x ), f.y ),
+      f.z );
+  }
+`
 
-const sprayLight = { value: 1 }
-
-const sprayMaterial = new ShaderMaterial({
-  uniforms: {
-    uTime: ambientTime,
-    pointScale,
-    uLight: sprayLight,
-    uOrigin: { value: ORIGIN },
-    uColour: { value: new Color(FOUNTAIN.dropletColour) },
-  },
+// Falling water: pale and glassy, with bright streaks running down it. The
+// streak pattern is noise on a circle around the fall, so it has no seam
+// where the lathe closes. Seen edge-on a sheet is thicker, so the edges
+// are more opaque than the face.
+const fallMaterial = new ShaderMaterial({
+  uniforms: { uTime: ambientTime, uTint: { value: tint }, uLight: light },
   vertexShader: /* glsl */ `
-    uniform float uTime;
-    uniform float pointScale;
-    uniform vec3 uOrigin;
-    attribute float aSeed;
-    attribute float aHeading;
-    attribute float aLean;
-    attribute float aSpeed;
-    varying float vAlpha;
-    ${POINT_SIZE_GLSL}
+    varying vec2 vUv;
+    varying vec3 vWorld;
+    varying vec3 vNormal;
     void main() {
-      float t = fract( uTime / ${f(FOUNTAIN.lifetime)} + aSeed ) * ${f(FOUNTAIN.lifetime)};
-      float tilt = aLean * ${f(FOUNTAIN.spread)};
-      vec3 dir = vec3( sin( tilt ) * cos( aHeading ), cos( tilt ), sin( tilt ) * sin( aHeading ) );
-      vec3 p = uOrigin + dir * ${f(FOUNTAIN.launchSpeed)} * aSpeed * t;
-      p.y -= 0.5 * ${f(FOUNTAIN.gravity)} * t * t;
-      // Back under the surface: gone until it launches again.
-      float above = step( ${f(PARK.pondY)}, p.y );
-      vAlpha = above;
-      vec4 mv = viewMatrix * vec4( p, 1.0 );
-      gl_Position = projectionMatrix * mv;
-      gl_PointSize = max( worldPointSize( ${f(FOUNTAIN.dropletSize)}, mv ), 1.0 ) * above;
+      vUv = uv;
+      vec4 world = modelMatrix * vec4( position, 1.0 );
+      vWorld = world.xyz;
+      vNormal = normalize( mat3( modelMatrix ) * normal );
+      gl_Position = projectionMatrix * viewMatrix * world;
     }`,
   fragmentShader: /* glsl */ `
-    uniform vec3 uColour;
+    uniform float uTime;
+    uniform vec3 uTint;
     uniform float uLight;
-    varying float vAlpha;
+    varying vec2 vUv;
+    varying vec3 vWorld;
+    varying vec3 vNormal;
+    ${NOISE_GLSL}
     void main() {
-      float edge = length( gl_PointCoord - 0.5 );
-      float alpha = smoothstep( 0.5, 0.2, edge ) * vAlpha * ${f(FOUNTAIN.dropletOpacity)};
-      if ( alpha < 0.01 ) discard;
-      gl_FragColor = vec4( uColour * uLight, alpha );
+      float angle = vUv.x * 6.2831853;
+      float flow = vUv.y * ${f(FOUNTAIN.flowLength)} - uTime * ${f(FOUNTAIN.flowSpeed)} * ${f(FOUNTAIN.flowLength)} * 0.35;
+      vec3 p = vec3( cos( angle ) * ${f(FOUNTAIN.streaks)}, sin( angle ) * ${f(FOUNTAIN.streaks)}, flow );
+      float streak = smoothstep( 0.5, 0.9, noise( p ) * 0.65 + noise( p * 2.3 ) * 0.35 );
+      vec3 toEye = normalize( cameraPosition - vWorld );
+      float edgeOn = 1.0 - abs( dot( normalize( vNormal ), toEye ) );
+      vec3 water = mix( uTint * 1.6, vec3( 0.93, 0.97, 1.0 ), 0.45 );
+      vec3 colour = mix( water, vec3( 1.0 ), streak * 0.65 );
+      float alpha = ${f(FOUNTAIN.sheetOpacity)} + streak * 0.3 + edgeOn * 0.35;
+      gl_FragColor = vec4( colour * uLight, clamp( alpha, 0.0, 0.92 ) );
+      #include <colorspace_fragment>
+    }`,
+  transparent: true,
+  depthWrite: false,
+  side: DoubleSide,
+})
+
+// Bowl water shimmers with small moving ripples; foam is a churning white
+// that never sits still.
+const surfaceMaterial = new ShaderMaterial({
+  uniforms: { uTime: ambientTime, uTint: { value: tint }, uLight: light },
+  vertexShader: /* glsl */ `
+    attribute float aFoam;
+    varying float vFoam;
+    varying vec3 vWorld;
+    void main() {
+      vFoam = aFoam;
+      vec4 world = modelMatrix * vec4( position, 1.0 );
+      vWorld = world.xyz;
+      gl_Position = projectionMatrix * viewMatrix * world;
+    }`,
+  fragmentShader: /* glsl */ `
+    uniform float uTime;
+    uniform vec3 uTint;
+    uniform float uLight;
+    varying float vFoam;
+    varying vec3 vWorld;
+    ${NOISE_GLSL}
+    void main() {
+      vec3 p = vec3( vWorld.xz * 9.0, uTime * 1.6 );
+      float n = noise( p ) * 0.6 + noise( p * 2.1 + 3.7 ) * 0.4;
+      if ( vFoam > 0.5 ) {
+        float foam = smoothstep( 0.35, 0.75, n );
+        float alpha = foam * ${f(FOUNTAIN.foamOpacity)};
+        if ( alpha < 0.02 ) discard;
+        gl_FragColor = vec4( vec3( 0.96, 0.98, 1.0 ) * uLight, alpha );
+      } else {
+        vec3 water = uTint * ( 0.85 + n * 0.35 ) + smoothstep( 0.7, 0.9, n ) * 0.12;
+        gl_FragColor = vec4( water * uLight, 0.9 );
+      }
       #include <colorspace_fragment>
     }`,
   transparent: true,
   depthWrite: false,
 })
 
+function reflected(object: { layers: { enable: (layer: number) => void } } | null) {
+  object?.layers.enable(AMBIENT.reflectLayer)
+}
+
 export function Fountain() {
   const stone = useMemo(() => buildStone(), [])
-  const spray = useMemo(() => buildSpray(), [])
+  const falls = useMemo(() => buildFalls(), [])
+  const surfaces = useMemo(() => buildSurfaces(), [])
 
-  // Unlit, so it dims with dusk by hand, the same way the water does.
   useFrame(() => {
-    sprayLight.value = 1 - (1 - WATER.duskLight) * duskLevel()
+    light.value = 1 - (1 - FOUNTAIN.duskLight) * duskLevel()
   })
 
   return (
     <group>
-      <mesh
-        ref={(mesh) => mesh?.layers.enable(AMBIENT.reflectLayer)}
-        geometry={stone}
-        material={stoneMaterial}
-        castShadow
-        receiveShadow
-        raycast={() => null}
-      />
-      <points
-        ref={(points) => points?.layers.enable(AMBIENT.reflectLayer)}
-        geometry={spray}
-        material={sprayMaterial}
-        frustumCulled={false}
-        raycast={() => null}
-      />
+      <mesh ref={reflected} geometry={stone} material={stoneMaterial} castShadow receiveShadow raycast={() => null} />
+      {/* Surfaces first, then the falls over them. */}
+      <mesh ref={reflected} geometry={surfaces} material={surfaceMaterial} renderOrder={1} raycast={() => null} />
+      <mesh ref={reflected} geometry={falls} material={fallMaterial} renderOrder={2} raycast={() => null} />
     </group>
   )
 }
