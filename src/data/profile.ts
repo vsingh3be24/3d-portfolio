@@ -14,8 +14,8 @@ export const profile = {
   // Her resume lists github.com/vaishnavi-singh, which is a different, empty
   // account; this is the one with her projects.
   github: "https://github.com/vsingh3be24",
-  linkedin: "https://linkedin.com/in/vaishnavi-singh",
-  leetcode: "https://leetcode.com/u/vaishnavi-singh",
+  linkedin: "https://www.linkedin.com/in/vaishnavi-singh-2c15/",
+  leetcode: "https://leetcode.com/u/vaishnaviniiiiijaaaa/",
   // Served from public/. Linked from the destination list as "My resume".
   resume: "/resume.pdf",
   // Bottom right, beside a small accent dot.
