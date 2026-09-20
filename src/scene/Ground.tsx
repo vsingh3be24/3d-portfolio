@@ -11,6 +11,7 @@ import {
 } from 'three'
 import { palette } from '@/theme'
 import { GROUND, SLAB } from './constants'
+import { shrubs, trees } from './planting'
 import { trackColour, trackTint } from './dusk'
 import { slabShape } from './slab'
 
@@ -65,6 +66,29 @@ function createGrassTexture(): CanvasTexture {
     context.globalAlpha = GROUND.patchOpacity[0] + random() * (GROUND.patchOpacity[1] - GROUND.patchOpacity[0])
     context.fillStyle = patch
     context.fillRect(x - radius, y - radius, radius * 2, radius * 2)
+  }
+  context.globalAlpha = 1
+
+  // The shade of the planting, painted where each trunk and each shrub meets
+  // the grass. World x runs left to right across the canvas; world z runs
+  // down it, because the texture is uploaded flipped, as textures are.
+  const shade = (x: number, z: number, radius: number, opacity: number) => {
+    const px = ((x + SLAB.width / 2) / SLAB.width) * size
+    const py = ((z + SLAB.depth / 2) / SLAB.depth) * size
+    const pr = (radius / SLAB.width) * size
+    const patch = context.createRadialGradient(px, py, 0, px, py, pr)
+    patch.addColorStop(0, 'rgba(0,0,0,0.9)')
+    patch.addColorStop(0.45, 'rgba(0,0,0,0.5)')
+    patch.addColorStop(1, 'rgba(0,0,0,0)')
+    context.globalAlpha = opacity
+    context.fillStyle = patch
+    context.fillRect(px - pr, py - pr, pr * 2, pr * 2)
+  }
+  for (const tree of trees()) {
+    shade(tree.x, tree.z, tree.scale * GROUND.treeShadeRadius, GROUND.treeShadeOpacity)
+  }
+  for (const shrub of shrubs()) {
+    shade(shrub.x, shrub.z, shrub.scale * GROUND.shrubShadeRadius, GROUND.shrubShadeOpacity)
   }
   context.globalAlpha = 1
 

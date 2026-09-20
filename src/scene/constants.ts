@@ -48,6 +48,14 @@ export const GROUND = {
   // The darkening towards the lip, over the patches.
   falloffOpacity: 0.7,
   anisotropy: 8,
+  // Where a crown meets the grass. A shadow cast from one direction alone
+  // never darkens the ground right under a trunk, so the planting's own
+  // shade is painted into the lawn: the light a crown keeps off the ground
+  // right beneath itself. Radii are multiples of the plant's own scale.
+  treeShadeRadius: 1.3,
+  shrubShadeRadius: 0.75,
+  treeShadeOpacity: 0.42,
+  shrubShadeOpacity: 0.3,
 } as const
 
 // Road. Every surface gets its own y so no two are ever coplanar.
@@ -638,17 +646,6 @@ export const TREES = {
 
 // The wall and hedge that run the slab's perimeter, and the one gap in them
 // where the society is entered.
-// Where a crown meets the grass. A shadow cast from one direction alone
-// never darkens the ground right under a trunk, so each tree gets a soft
-// patch of its own: the light its own crown keeps off the ground beneath it.
-export const TREE_SHADE = {
-  // Multiples of the tree's own scale.
-  radius: 1.15,
-  y: 0.012,
-  opacity: 0.36,
-  textureSize: 128,
-} as const
-
 // Low planting: shrubs tucked under the trees, so the grass between the
 // trunks is never bare. One instanced draw call for all of them.
 export const BUSHES = {
