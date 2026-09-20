@@ -1,5 +1,6 @@
 import {
   CanvasTexture,
+  Color,
   DoubleSide,
   ExtrudeGeometry,
   MeshBasicMaterial,
@@ -9,7 +10,7 @@ import {
   type BufferGeometry,
 } from 'three'
 import { palette } from '@/theme'
-import { SLAB } from './constants'
+import { GROUND, SLAB } from './constants'
 import { trackColour, trackTint } from './dusk'
 import { slabShape } from './slab'
 
@@ -23,31 +24,68 @@ type GroundResources = {
 
 let resources: GroundResources | null = null
 
-// A soft gradient keeps 1400 square units of grass from reading as one dead
-// fill, without costing a second material.
+// A repeatable number in [0, 1), so the lawn is mottled the same way on
+// every load rather than freshly random each time.
+function mulberry32(seed: number) {
+  let state = seed
+  return () => {
+    state |= 0
+    state = (state + 0x6d2b79f5) | 0
+    let t = Math.imul(state ^ (state >>> 15), 1 | state)
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296
+  }
+}
+
+// Grass, painted once: patches of slightly lighter and darker green under a
+// soft falloff towards the edges. Without the patches 1400 square units read
+// as one dead fill; with them it reads as ground that grew rather than ground
+// that was filled in.
 function createGrassTexture(): CanvasTexture {
-  const size = 512
+  const size = GROUND.grassTextureSize
   const canvas = document.createElement('canvas')
   canvas.width = size
   canvas.height = size
 
   const context = canvas.getContext('2d')!
-  const gradient = context.createRadialGradient(
-    size / 2,
-    size / 2,
-    size * 0.1,
-    size / 2,
-    size / 2,
-    size * 0.62,
-  )
-  gradient.addColorStop(0, palette.slabTop)
-  gradient.addColorStop(0.6, palette.slabTop)
-  gradient.addColorStop(1, palette.grassDark)
-  context.fillStyle = gradient
+  context.fillStyle = palette.slabTop
   context.fillRect(0, 0, size, size)
+
+  const random = mulberry32(GROUND.grassSeed)
+  const light = new Color(palette.slabTop).lerp(new Color('#ffffff'), GROUND.patchLift).getStyle()
+  const dark = palette.grassDark
+  for (let index = 0; index < GROUND.patchCount; index += 1) {
+    const x = random() * size
+    const y = random() * size
+    const radius = size * (GROUND.patchRadius[0] + random() * (GROUND.patchRadius[1] - GROUND.patchRadius[0]))
+    const colour = random() < 0.5 ? light : dark
+    const patch = context.createRadialGradient(x, y, 0, x, y, radius)
+    patch.addColorStop(0, colour)
+    patch.addColorStop(1, 'rgba(0,0,0,0)')
+    context.globalAlpha = GROUND.patchOpacity[0] + random() * (GROUND.patchOpacity[1] - GROUND.patchOpacity[0])
+    context.fillStyle = patch
+    context.fillRect(x - radius, y - radius, radius * 2, radius * 2)
+  }
+  context.globalAlpha = 1
+
+  // The estate's middle stays the brightest of it, the lip the deepest.
+  const falloff = context.createRadialGradient(size / 2, size / 2, size * 0.1, size / 2, size / 2, size * 0.62)
+  falloff.addColorStop(0, 'rgba(0,0,0,0)')
+  falloff.addColorStop(0.55, 'rgba(0,0,0,0)')
+  falloff.addColorStop(1, dark)
+  context.globalAlpha = GROUND.falloffOpacity
+  context.fillStyle = falloff
+  context.fillRect(0, 0, size, size)
+  context.globalAlpha = 1
 
   const texture = new CanvasTexture(canvas)
   texture.colorSpace = SRGBColorSpace
+  // The slab's own UVs are world units, running -width/2 to width/2, so the
+  // texture is scaled onto them rather than tiled once per unit — which, with
+  // clamped wrapping, left the whole lawn the colour of the texture's edge.
+  texture.repeat.set(1 / SLAB.width, 1 / SLAB.depth)
+  texture.offset.set(0.5, 0.5)
+  texture.anisotropy = GROUND.anisotropy
   return texture
 }
 

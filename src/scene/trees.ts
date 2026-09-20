@@ -10,10 +10,10 @@ import {
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
 import { palette } from '@/theme'
 import { ambientTime } from './ambient'
-import { TREES } from './constants'
+import { BUSHES, TREES } from './constants'
 import { trackTint } from './dusk'
 
-export type TreeSpecies = 'broadleaf' | 'conifer'
+export type TreeSpecies = 'broadleaf' | 'conifer' | 'column'
 
 // A repeatable number in [-1, 1] for a point in space. Keyed on position, so
 // the copies of a vertex shared between faces all move together and the
@@ -75,8 +75,15 @@ function finish(parts: BufferGeometry[]): BufferGeometry {
   return merged
 }
 
-function broadleaf(): BufferGeometry {
-  const spec = TREES.broadleaf
+// A trunk under a crown of overlapping blobs. Both the round tree and the
+// tall narrow one are this shape with different clumps.
+function clumped(spec: {
+  trunkHeight: number
+  trunkRadiusTop: number
+  trunkRadiusBottom: number
+  clumps: readonly (readonly [number, number, number, number])[]
+  lumpiness: number
+}): BufferGeometry {
   const top = Math.max(...spec.clumps.map(([, y, , r]) => y + r))
   const parts = [trunk(spec.trunkHeight, spec.trunkRadiusTop, spec.trunkRadiusBottom)]
   for (const [x, y, z, radius] of spec.clumps) {
@@ -106,11 +113,37 @@ function conifer(): BufferGeometry {
   return finish(parts)
 }
 
+// A shrub: the same crown, lower and smaller, in the hedge's colour.
+function bush(): BufferGeometry {
+  const parts: BufferGeometry[] = []
+  const top = Math.max(...BUSHES.clumps.map(([, y, , r]) => y + r))
+  for (const [x, y, z, radius] of BUSHES.clumps) {
+    const clump = faceted(new IcosahedronGeometry(radius, 1))
+    clump.translate(x, y, z)
+    roughen(clump, x, y, z, BUSHES.lumpiness)
+    shade(clump, palette.hedge, TREES.shadeBottom, TREES.shadeTop, 0, top)
+    parts.push(clump)
+  }
+  return finish(parts)
+}
+
 let geometries: Record<TreeSpecies, BufferGeometry> | null = null
+let bushGeometry: BufferGeometry | null = null
 
 export function treeGeometry(species: TreeSpecies): BufferGeometry {
-  if (!geometries) geometries = { broadleaf: broadleaf(), conifer: conifer() }
+  if (!geometries) {
+    geometries = {
+      broadleaf: clumped(TREES.broadleaf),
+      conifer: conifer(),
+      column: clumped(TREES.column),
+    }
+  }
   return geometries[species]
+}
+
+export function shrubGeometry(): BufferGeometry {
+  if (!bushGeometry) bushGeometry = bush()
+  return bushGeometry
 }
 
 // One material for both species. Colour is on the vertices (the day palette)

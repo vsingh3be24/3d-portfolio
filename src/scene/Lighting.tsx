@@ -7,6 +7,7 @@ import { themes } from '@/theme'
 import { AMBIENT, DUSK, INTRO, LIGHTING, SKY } from './constants'
 import { applyColours, dusk, stage } from './dusk'
 import { skyColours } from './Sky'
+import { isLowTier } from './deviceTier'
 import { introPlays, sinceReveal } from './intro'
 import { requestShadowUpdate, takeShadowRequest } from './shadows'
 
@@ -46,6 +47,13 @@ export function Lighting() {
   const theme = useEstate((state) => state.theme)
   const prefersReducedMotion = usePrefersReducedMotion()
   const sky = useMemo(() => SKY_DAY.clone(), [])
+  // Decided against the renderer that will do the work, once: a weaker
+  // device keeps the smaller map, where its memory matters more than the
+  // sharpness of a shadow's edge does.
+  const shadowMapSize = useMemo(
+    () => (isLowTier(gl) ? LIGHTING.shadowMapSizeLowTier : LIGHTING.shadowMapSize),
+    [gl],
+  )
   const firstRun = useRef(true)
   // Arriving at dusk with the intro: the lights start out and come on at the
   // intro's pace. Any toggle after that hands them back to the ordinary one.
@@ -173,8 +181,8 @@ export function Lighting() {
         position={LIGHTING.directionalPosition}
         color={LIGHTING.directionalColor}
         intensity={LIGHTING.directionalIntensity}
-        shadow-mapSize-width={LIGHTING.shadowMapSize}
-        shadow-mapSize-height={LIGHTING.shadowMapSize}
+        shadow-mapSize-width={shadowMapSize}
+        shadow-mapSize-height={shadowMapSize}
         shadow-bias={LIGHTING.shadowBias}
         shadow-normalBias={LIGHTING.shadowNormalBias}
         shadow-radius={LIGHTING.shadowRadius}

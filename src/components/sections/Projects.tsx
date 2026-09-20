@@ -57,6 +57,11 @@ function ProjectCard({ plot, index }: { plot: Plot; index: number }) {
             'radial-gradient(320px circle at var(--spot-x, 50%) var(--spot-y, 0%), rgb(var(--ui-glow) / 0.9), rgb(var(--ui-accent) / 0.5) 40%, transparent 70%)',
         }}
       />
+      {/* A hairline along the card's top edge, brightest in the middle. */}
+      <span
+        aria-hidden
+        className="pointer-events-none absolute inset-x-8 top-0 h-px bg-gradient-to-r from-transparent via-ink/25 to-transparent transition-opacity duration-500 group-hover/card:opacity-0"
+      />
       <RevealOnScroll className="relative rounded-3xl border border-ink/10 bg-ink/[0.025] p-6 shadow-[0_30px_80px_-50px_rgb(0_0_0/0.6)] transition-[border-color,box-shadow] duration-500 group-hover/card:border-transparent group-hover/card:shadow-[0_40px_90px_-40px_rgb(var(--ui-accent)/0.45)] sm:p-8">
       {/* A large faint number, set behind the card's top corner. */}
       <span

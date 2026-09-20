@@ -10,7 +10,9 @@ export function About() {
       <RevealOnScroll className="flex max-w-[60ch] flex-col gap-5">
         {/* The first paragraph leads, larger; the rest read as body text. */}
         <Reveal>
-          <p className="font-display text-step-3 leading-snug tracking-[-0.01em] text-ink">{lead}</p>
+          <p className="relative border-l-2 border-accent/70 pl-5 font-display text-step-3 leading-snug tracking-[-0.01em] text-ink">
+            {lead}
+          </p>
         </Reveal>
         {rest.map((paragraph) => (
           <Reveal key={paragraph}>

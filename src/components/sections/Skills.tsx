@@ -1,6 +1,6 @@
 import { Reveal, RevealOnScroll } from '@/components/motion/Reveal'
 import { Section } from '@/components/layout/Section'
-import { chip } from '@/components/ui/styles'
+import { chip, rule } from '@/components/ui/styles'
 import { profile } from '@/data/profile'
 import { site } from '@/data/site'
 
@@ -14,6 +14,7 @@ export function Skills() {
               {group.label}
               <span className="font-body text-step-0 font-normal text-ink/40">{group.items.length}</span>
             </h3>
+            <span aria-hidden className={`mt-2 block w-8 ${rule}`} />
             <ul className="mt-3 flex flex-wrap gap-2">
               {group.items.map((item) => (
                 <li key={item} className={chip}>

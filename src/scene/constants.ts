@@ -35,6 +35,21 @@ export const SLAB = {
   shadowTextureSize: 256,
 } as const
 
+// The grass painted onto the slab's top face.
+export const GROUND = {
+  grassTextureSize: 1024,
+  grassSeed: 48221,
+  // Patches of lighter and darker green, as a share of the texture's width.
+  patchCount: 220,
+  patchRadius: [0.02, 0.1] as [number, number],
+  patchOpacity: [0.08, 0.26] as [number, number],
+  // How far the lighter patches are lifted towards white.
+  patchLift: 0.22,
+  // The darkening towards the lip, over the patches.
+  falloffOpacity: 0.7,
+  anisotropy: 8,
+} as const
+
 // Road. Every surface gets its own y so no two are ever coplanar.
 export const ROAD = {
   width: 2.4,
@@ -229,12 +244,18 @@ export const LIGHTING = {
   directionalColor: "#fff0d9",
   // Far enough out that the shadow frustum stays tight around the estate.
   directionalPosition: [26, 34, 20] as [number, number, number],
-  shadowMapSize: 2048,
-  shadowBias: -0.0005,
+  // Four times the texels across the same ground as before, so an edge is a
+  // line rather than a gradient. Redrawn only on request, so the extra
+  // resolution costs memory rather than frames; weaker devices keep the old
+  // size, where the memory matters more than the edge does.
+  shadowMapSize: 4096,
+  shadowMapSizeLowTier: 2048,
+  shadowBias: -0.00035,
   shadowNormalBias: 0.02,
   // PCFSoftShadowMap was removed in three r186, so softness comes from the PCF
   // kernel radius instead. Cheaper than PCSS, which the frame budget rules out.
-  shadowRadius: 2.4,
+  // In texels, so at the higher resolution this is a narrower penumbra too.
+  shadowRadius: 1.8,
   shadowExtent: 24,
   shadowNear: 20,
   shadowFar: 80,
@@ -554,7 +575,10 @@ export const BIRDS = {
 
 // Two species share the estate. Heights are for a tree at scale 1.
 export const TREES = {
-  broadleafShare: 0.55,
+  // Share of the planting each species takes, in this order. Three
+  // silhouettes rather than two: round, conical, and a tall narrow column,
+  // which is what stops a stand of trees reading as one tree repeated.
+  species: { broadleaf: 0.42, conifer: 0.33, column: 0.25 },
   speciesSeed: 7351,
   broadleaf: {
     trunkHeight: 1.0,
@@ -584,13 +608,27 @@ export const TREES = {
     segments: 9,
     lumpiness: 0.07,
   },
+  // A tall, narrow crown carried up the trunk in small clumps: the columnar
+  // trees that line drives and boundaries.
+  column: {
+    trunkHeight: 1.1,
+    trunkRadiusTop: 0.06,
+    trunkRadiusBottom: 0.09,
+    clumps: [
+      [0, 1.18, 0, 0.36],
+      [0.05, 1.56, -0.04, 0.39],
+      [-0.04, 1.94, 0.03, 0.34],
+      [0.02, 2.26, 0, 0.24],
+    ] as [number, number, number, number][],
+    lumpiness: 0.16,
+  },
   // Crowns are darker underneath and lighter on top: a cheap stand-in for
   // the light a real crown blocks from its own lower branches.
   shadeBottom: 0.7,
   shadeTop: 1.12,
   // Per-tree variation, so a stand of trees never reads as one repeated tree.
-  brightnessRange: 0.11,
-  warmthRange: 0.05,
+  brightnessRange: 0.15,
+  warmthRange: 0.09,
   // Wind: how far a crown's top moves, how fast, and where bending starts.
   swayAmplitude: 0.045,
   swaySpeed: 1.1,
@@ -600,6 +638,37 @@ export const TREES = {
 
 // The wall and hedge that run the slab's perimeter, and the one gap in them
 // where the society is entered.
+// Where a crown meets the grass. A shadow cast from one direction alone
+// never darkens the ground right under a trunk, so each tree gets a soft
+// patch of its own: the light its own crown keeps off the ground beneath it.
+export const TREE_SHADE = {
+  // Multiples of the tree's own scale.
+  radius: 1.15,
+  y: 0.012,
+  opacity: 0.36,
+  textureSize: 128,
+} as const
+
+// Low planting: shrubs tucked under the trees, so the grass between the
+// trunks is never bare. One instanced draw call for all of them.
+export const BUSHES = {
+  count: 56,
+  seed: 61207,
+  // How far from its tree a shrub sits, and how large it is.
+  spread: [1.0, 2.3] as [number, number],
+  scale: [0.75, 1.3] as [number, number],
+  // Overlapping blobs as [x, y, z, radius], like a crown but close to
+  // the ground and small enough that the wind never reaches it.
+  clumps: [
+    [0, 0.17, 0, 0.3],
+    [0.21, 0.13, 0.11, 0.22],
+    [-0.17, 0.14, -0.12, 0.24],
+  ] as [number, number, number, number][],
+  lumpiness: 0.22,
+  // Clear of anything a shrub has no business growing through.
+  clearance: 0.7,
+} as const
+
 export const BOUNDARY = {
   inset: 1.5,
   wallHeight: 0.42,

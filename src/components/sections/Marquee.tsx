@@ -37,8 +37,9 @@ export function Marquee() {
   return (
     <div
       aria-hidden
-      className="fade-x group/marquee relative select-none overflow-hidden border-t border-ink/10 py-12 font-display text-[44px] font-semibold leading-tight tracking-[-0.02em] sm:py-16 sm:text-[64px]"
+      className="fade-x group/marquee relative select-none overflow-hidden py-12 font-display text-[44px] font-semibold leading-tight tracking-[-0.02em] sm:py-16 sm:text-[64px]"
     >
+      <span className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-ink/20 to-transparent" />
       <div className="-rotate-[1.5deg] space-y-2">
         <Row words={rows[0]} reverse={false} outlined={false} />
         <Row words={rows[1]} reverse outlined />

@@ -7,7 +7,11 @@ const firstName = profile.name.split(' ')[0]
 // the small print.
 export function Footer() {
   return (
-    <footer className="relative overflow-hidden border-t border-ink/10">
+    <footer className="relative overflow-hidden">
+      <span
+        aria-hidden
+        className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-ink/20 to-transparent"
+      />
       <p
         aria-hidden
         className="pointer-events-none select-none text-center font-display text-[24vw] font-bold leading-[0.8] tracking-[-0.05em] sm:text-[19vw]"

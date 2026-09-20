@@ -77,8 +77,13 @@ export function Hero() {
   return (
     <MotionConfig reducedMotion="user">
       <section className="flex flex-col lg:h-screen lg:flex-row">
-        <div className="order-2 w-full lg:order-1 lg:h-full lg:w-[42%]">
+        <div className="relative order-2 w-full lg:order-1 lg:h-full lg:w-[42%]">
           <IntroColumn />
+          {/* The seam between the page and the estate, lit in the middle. */}
+          <span
+            aria-hidden
+            className="absolute inset-y-0 right-0 hidden w-px bg-gradient-to-b from-transparent via-ink/20 to-transparent lg:block"
+          />
         </div>
         <div className="relative order-1 h-[42vh] w-full overflow-hidden md:h-[55vh] lg:order-2 lg:h-full lg:w-[58%]">
           <SceneColumn />

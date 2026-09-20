@@ -23,11 +23,24 @@ import {
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
 import { plots } from '@/data/plots'
 import { palette, themes } from '@/theme'
-import { AMBIENT, BOUNDARY, COLORS, COMMUNITY, DUSK, ESTATE, PARK, ROAD, SLAB, TREES } from './constants'
+import {
+  AMBIENT,
+  BOUNDARY,
+  BUSHES,
+  COLORS,
+  COMMUNITY,
+  DUSK,
+  ESTATE,
+  PARK,
+  ROAD,
+  SLAB,
+  TREES,
+  TREE_SHADE,
+} from './constants'
 import { getLanePoint, getPointAt, roadJunctions, roadLength, wrapU } from './curves'
 import { gateAnchor, gateT, isOnSlab, slabOutline } from './slab'
 import { lightStage, trackColour, trackTint } from './dusk'
-import { treeGeometry, treeMaterial, type TreeSpecies } from './trees'
+import { shrubGeometry, treeGeometry, treeMaterial, type TreeSpecies } from './trees'
 
 // One material for every piece of static dressing. Colour rides on the vertices
 // instead, so nine separate props collapse into a single draw call.
@@ -140,15 +153,18 @@ type TreePlacement = { x: number; z: number; scale: number; rotation: number; sp
 
 // Sampled across the whole slab rather than in an annulus, because the rounded
 // corners of the slab are exactly where an annulus leaves bald patches.
-function placeTrees(): TreePlacement[] {
-  const random = mulberry32(ESTATE.treeSeed)
-  const placements: TreePlacement[] = []
+// Points along the ring road and the approach from the gate, which nothing
+// planted may stand too close to.
+let roadSamplesCache: Vector2[] | null = null
 
-  const roadSamples: Vector2[] = []
+function roadSamples(): Vector2[] {
+  if (roadSamplesCache) return roadSamplesCache
+
+  const samples: Vector2[] = []
   const point = new Vector3()
   for (let index = 0; index < 260; index += 1) {
     getPointAt(index / 260, point)
-    roadSamples.push(new Vector2(point.x, point.z))
+    samples.push(new Vector2(point.x, point.z))
   }
 
   // The approach from the gate is road too, so it needs the same clearance.
@@ -156,8 +172,17 @@ function placeTrees(): TreePlacement[] {
   getPointAt(roadJunctions().gate.u, point)
   for (let index = 0; index <= 24; index += 1) {
     const t = index / 24
-    roadSamples.push(new Vector2(gate.x + (point.x - gate.x) * t, gate.z + (point.z - gate.z) * t))
+    samples.push(new Vector2(gate.x + (point.x - gate.x) * t, gate.z + (point.z - gate.z) * t))
   }
+
+  roadSamplesCache = samples
+  return samples
+}
+
+function placeTrees(): TreePlacement[] {
+  const random = mulberry32(ESTATE.treeSeed)
+  const placements: TreePlacement[] = []
+  const road = roadSamples()
 
   const plotPoints = plots.map((plot) => new Vector2(plot.position[0], plot.position[2]))
   const pond = new Vector2(PARK.pondCentre[0], PARK.pondCentre[1])
@@ -174,7 +199,7 @@ function placeTrees(): TreePlacement[] {
     if (!isOnSlab(candidate.x, candidate.y, ESTATE.treeSlabMargin)) continue
     if (candidate.distanceTo(pond) < PARK.pondRadius + ESTATE.treeClearanceFromPond) continue
     if (candidate.distanceTo(community) < COMMUNITY.width) continue
-    if (roadSamples.some((sample) => sample.distanceTo(candidate) < roadClearance)) continue
+    if (road.some((sample) => sample.distanceTo(candidate) < roadClearance)) continue
     if (plotPoints.some((plot) => plot.distanceTo(candidate) < ESTATE.treeClearanceFromPlot)) continue
     if (
       placements.some(
@@ -202,13 +227,65 @@ function placeTrees(): TreePlacement[] {
   // moves a tree that the placement above already settled.
   const look = mulberry32(TREES.speciesSeed)
   for (const tree of placements) {
-    tree.species = look() < TREES.broadleafShare ? 'broadleaf' : 'conifer'
+    const pick = look()
+    const { broadleaf, conifer } = TREES.species
+    tree.species = pick < broadleaf ? 'broadleaf' : pick < broadleaf + conifer ? 'conifer' : 'column'
     const brightness = 1 + (look() * 2 - 1) * TREES.brightnessRange
     const warmth = (look() * 2 - 1) * TREES.warmthRange
     tree.tint.setRGB(brightness * (1 + warmth), brightness, brightness * (1 - warmth))
   }
 
   return placements
+}
+
+type ShrubPlacement = { x: number; z: number; scale: number; rotation: number; tint: Color }
+
+// Shrubs shelter under the trees: each one picks a tree and sits a little way
+// off it, wherever that spot is clear of the road, the plots and the water.
+function placeShrubs(trees: TreePlacement[]): ShrubPlacement[] {
+  const random = mulberry32(BUSHES.seed)
+  const shrubs: ShrubPlacement[] = []
+  if (trees.length === 0) return shrubs
+
+  const pond = new Vector2(PARK.pondCentre[0], PARK.pondCentre[1])
+  const plotPoints = plots.map((plot) => new Vector2(plot.position[0], plot.position[2]))
+  const [near, far] = BUSHES.spread
+  const [small, large] = BUSHES.scale
+  const road = roadSamples()
+  const roadClearance = ROAD.width / 2 + ROAD.kerbWidth + BUSHES.clearance
+  const spot = new Vector2()
+
+  let attempts = 0
+  while (shrubs.length < BUSHES.count && attempts < 4000) {
+    attempts += 1
+    const tree = trees[Math.floor(random() * trees.length)]
+    const angle = random() * Math.PI * 2
+    const distance = near + random() * (far - near)
+    spot.set(tree.x + Math.cos(angle) * distance, tree.z + Math.sin(angle) * distance)
+
+    if (!isOnSlab(spot.x, spot.y, ESTATE.treeSlabMargin)) continue
+    if (road.some((sample) => sample.distanceTo(spot) < roadClearance)) continue
+    if (spot.distanceTo(pond) < PARK.pondRadius + BUSHES.clearance) continue
+    if (plotPoints.some((plot) => plot.distanceTo(spot) < ESTATE.treeClearanceFromPlot)) continue
+    // Off the ring road and off the park's walk.
+    const fromCentre = spot.length()
+    if (fromCentre > PARK.pathInnerRadius - BUSHES.clearance && fromCentre < PARK.pathOuterRadius + BUSHES.clearance) {
+      continue
+    }
+    if (shrubs.some((other) => Math.hypot(other.x - spot.x, other.z - spot.y) < BUSHES.clearance)) continue
+
+    const brightness = 1 + (random() * 2 - 1) * TREES.brightnessRange
+    const warmth = (random() * 2 - 1) * TREES.warmthRange
+    shrubs.push({
+      x: spot.x,
+      z: spot.y,
+      scale: small + random() * (large - small),
+      rotation: random() * Math.PI * 2,
+      tint: new Color(brightness * (1 + warmth), brightness, brightness * (1 - warmth)),
+    })
+  }
+
+  return shrubs
 }
 
 // Streetlights spaced evenly round the ring, except that any lamp landing in a
@@ -337,6 +414,7 @@ type EstateResources = {
   // Everything with height, merged into one shadow-casting mesh.
   standing: BufferGeometry
   trees: TreePlacement[]
+  shrubs: ShrubPlacement[]
   lamps: number[]
 }
 
@@ -389,6 +467,8 @@ function getResources(): EstateResources {
   noticePanel.rotateY(contact.rotation)
   noticePanel.translate(contact.position[0], 0, contact.position[2])
 
+  const trees = placeTrees()
+
   resources = {
     lamp,
     bench,
@@ -412,11 +492,43 @@ function getResources(): EstateResources {
       ],
       false,
     ),
-    trees: placeTrees(),
+    trees,
+    shrubs: placeShrubs(trees),
     lamps: placeLamps(),
   }
 
   return resources
+}
+
+function ShrubInstances({ shrubs }: { shrubs: ShrubPlacement[] }) {
+  const meshRef = useRef<InstancedMesh>(null)
+
+  useLayoutEffect(() => {
+    const mesh = meshRef.current
+    if (!mesh) return
+    const dummy = new Object3D()
+    shrubs.forEach((shrub, index) => {
+      dummy.position.set(shrub.x, 0, shrub.z)
+      dummy.rotation.set(0, shrub.rotation, 0)
+      dummy.scale.setScalar(shrub.scale)
+      dummy.updateMatrix()
+      mesh.setMatrixAt(index, dummy.matrix)
+      mesh.setColorAt(index, shrub.tint)
+    })
+    mesh.instanceMatrix.needsUpdate = true
+    if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true
+  }, [shrubs])
+
+  if (shrubs.length === 0) return null
+
+  return (
+    <instancedMesh
+      ref={meshRef}
+      args={[shrubGeometry(), treeMaterial, shrubs.length]}
+      castShadow
+      receiveShadow={false}
+    />
+  )
 }
 
 export function Props() {
@@ -438,6 +550,16 @@ export function Props() {
       dummy.position.y = DUSK.poolY
     },
     [lampTransform],
+  )
+
+  const shadeTransform = useMemo(
+    () => (dummy: Object3D, index: number) => {
+      const tree = parts.trees[index]
+      dummy.position.set(tree.x, TREE_SHADE.y, tree.z)
+      dummy.rotation.set(0, tree.rotation, 0)
+      dummy.scale.setScalar(tree.scale * TREE_SHADE.radius * 2)
+    },
+    [parts.trees],
   )
 
   const poolsRef = useRef<InstancedMesh>(null)
@@ -474,8 +596,19 @@ export function Props() {
           anything the pond can mirror from the camera's heights. */}
       <mesh geometry={parts.standing} material={dressingMaterial} castShadow receiveShadow />
 
+      {/* Under the planting, over the grass: drawn before the trees so the
+          discs never sort in front of a trunk. */}
+      <CountedInstances
+        geometry={treeShadeGeometry()}
+        material={treeShadeMaterial()}
+        count={parts.trees.length}
+        transform={shadeTransform}
+        castShadow={false}
+      />
       <TreeInstances trees={parts.trees} species="broadleaf" />
       <TreeInstances trees={parts.trees} species="conifer" />
+      <TreeInstances trees={parts.trees} species="column" />
+      <ShrubInstances shrubs={parts.shrubs} />
       <CountedInstances
         ref={reflected}
         geometry={parts.lamp}
@@ -550,6 +683,47 @@ const CountedInstances = forwardRef<InstancedMesh, CountedInstancesProps>(functi
 })
 
 // One instanced mesh per species, each tree carrying its own colour variation.
+// A soft dark disc, drawn on the grass under every trunk.
+function createShadeTexture(): CanvasTexture {
+  const size = TREE_SHADE.textureSize
+  const canvas = document.createElement('canvas')
+  canvas.width = size
+  canvas.height = size
+  const context = canvas.getContext('2d')!
+  const gradient = context.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size / 2)
+  gradient.addColorStop(0, 'rgba(0,0,0,0.85)')
+  gradient.addColorStop(0.45, 'rgba(0,0,0,0.5)')
+  gradient.addColorStop(1, 'rgba(0,0,0,0)')
+  context.fillStyle = gradient
+  context.fillRect(0, 0, size, size)
+  return new CanvasTexture(canvas)
+}
+
+let shadeMaterial: MeshBasicMaterial | null = null
+
+function treeShadeMaterial(): MeshBasicMaterial {
+  if (!shadeMaterial) {
+    shadeMaterial = new MeshBasicMaterial({
+      map: createShadeTexture(),
+      transparent: true,
+      opacity: TREE_SHADE.opacity,
+      depthWrite: false,
+      color: 0x000000,
+    })
+  }
+  return shadeMaterial
+}
+
+let shadePlane: PlaneGeometry | null = null
+
+function treeShadeGeometry(): PlaneGeometry {
+  if (!shadePlane) {
+    shadePlane = new PlaneGeometry(1, 1)
+    shadePlane.rotateX(-Math.PI / 2)
+  }
+  return shadePlane
+}
+
 function TreeInstances({ trees, species }: { trees: TreePlacement[]; species: TreeSpecies }) {
   const own = useMemo(() => trees.filter((tree) => tree.species === species), [trees, species])
   const meshRef = useRef<InstancedMesh>(null)

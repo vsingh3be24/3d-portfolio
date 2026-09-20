@@ -25,7 +25,13 @@ export function Section({ id, number, label, title, intro, children }: SectionPr
 
   return (
     // Clipped rather than hidden, so the sticky heading still sticks.
-    <section id={id} className="relative overflow-x-clip border-t border-ink/10">
+    <section id={id} className="relative overflow-x-clip">
+      {/* A hairline that fades out at both ends rather than ruling right
+          across the page. */}
+      <span
+        aria-hidden
+        className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-ink/20 to-transparent"
+      />
       <Glow
         tone={left ? 'accent' : 'glow'}
         delay={number * 3}
